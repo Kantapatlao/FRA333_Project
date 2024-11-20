@@ -48,17 +48,20 @@ class Map:
         if np.unique(in_map).size != 2:
             raise ValueError("in_map numpy array should only contain 0 and 1")
         
-        if np.unique(in_map)[0] == 0 and np.unique(in_map)[1] == 1:
+        if np.unique(in_map)[0] != 0 and np.unique(in_map)[1] != 1:
             raise ValueError("in_map numpy array should only contain 0 and 1")
         
         # Declare "Map" object's attribute
         
         # full_map: Hold grid map in form of numpy.ndarray
-        # graph_map: Hold map in form of discretized map
+        # tree_map: Hold map in form of discretized map, inside binary tree
+        # optimized_map: Hold discrete grid map in graph structure
         
         
         self.full_map = in_map
-        self.graph_map = self.__map_discretizer_engine(BT_Node(self.full_map, 0, 0))
+        self.tree_map = self.__map_discretizer_engine(BT_Node(self.full_map, 0, 0))
+        self.optimized_map = self.__map_collapser()
+        
         return None
                 
         
@@ -110,11 +113,47 @@ class Map:
         node.childB = self.__map_discretizer_engine(BT_Node(map_for_b, b_x, b_y))
 
         return node
+    
 
+    # Collapsed near by map with same value by joining them together
+    def __map_collapser(self):
+
+        MAX_ITER = 100000
+
+        # Breadth first search queue
+        node_queue = [self.tree_map]
+        selected_node = []
+        queue_iter = 0
+
+        # Go through list, append 
+        while queue_iter + 1 <= len(node_queue):
+
+            # Stop if maximum iteration is reached
+            if queue_iter > MAX_ITER:
+                raise StopIteration("Maximum iteration limit reached.")
+
+
+            if node_queue[queue_iter].data is not None:
+                selected_node.append(node_queue[queue_iter])
+
+            if node_queue[queue_iter].childA is not None:
+                node_queue.append(node_queue[queue_iter].childA)
+            
+            if node_queue[queue_iter].childB is not None:
+                node_queue.append(node_queue[queue_iter].childB)
+
+            queue_iter = queue_iter + 1
+
+
+
+        return selected_node
+
+
+    
 
     # Dump content in graph_map
     def dump_graph(self):
-        self.__graph_dump_engine(self.graph_map)
+        self.__graph_dump_engine(self.tree_map)
         return None
 
     # Internal recursive engine
