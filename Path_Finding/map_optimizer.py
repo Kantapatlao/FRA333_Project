@@ -45,12 +45,16 @@ class Map:
             raise TypeError("in_map numpy array only takes uint8 as dtype")
         
         # Check if input only contain 0 and 1
-        if np.unique(in_map).size != 2:
-            raise ValueError("in_map numpy array should only contain 0 and 1")
+        if np.unique(in_map).size == 1:
+            if np.unique(in_map)[0] != 0 and np.unique(in_map)[0] != 1:
+                raise ValueError("in_map numpy array should only contain 0 and 1")
         
-        if np.unique(in_map)[0] != 0 and np.unique(in_map)[1] != 1:
+        elif np.unique(in_map).size == 2:
+            if np.unique(in_map)[0] != 0 or np.unique(in_map)[1] != 1:
+                raise ValueError("in_map numpy array should only contain 0 and 1")
+            
+        else:
             raise ValueError("in_map numpy array should only contain 0 and 1")
-        
         # Declare "Map" object's attribute
         
         # full_map: Hold grid map in form of numpy.ndarray
@@ -60,7 +64,7 @@ class Map:
         
         self.full_map = in_map
         self.tree_map = self.__map_discretizer_engine(BT_Node(self.full_map, 0, 0))
-        # self.optimized_map = self.__map_collapser()
+        self.optimized_map = self.__map_collapser()
         
         return None
                 
@@ -118,20 +122,99 @@ class Map:
     # Collapsed near by map with same value by joining them together
     def __map_collapser(self):
 
-        unoptimized_map = self.__graph_dump_engine()
-        optimized_map = []
-
-        for node in unoptimized_map:
+        # Max iteration constant
+        MAX_ITER = 10000
 
 
-        return None
+        # Get each discrete map node in form of list, seperate to two piles
+        map_zero = []
+        map_one = []
+
+        for node in self.__graph_dump_engine():
+            if node.data.value == 1:
+                map_one.append(node)
+
+            elif node.data.value == 0:
+                map_zero.append(node)
+
+            else:
+                raise ValueError(f'Unknown value: {node.data.value} in discrete map array.')
+            
+
+
+        # Collapse map together (Value = 0)
+        iter = 0
+
+        while len(map_zero) > iter + 1 and iter < MAX_ITER:
+
+            near_node_column = (map_zero[iter].posX + map_zero[iter].data.sizeX, map_zero[iter].posY)
+            near_node_row = (map_zero[iter].posX, map_zero[iter].posY + map_zero[iter].data.sizeY)
+
+            for node in map_zero[iter:]:
+                
+                if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
+                    
+                    if node.data.sizeY == map_zero[iter].data.sizeY:
+                        
+                        map_zero[iter].data.sizeX = map_zero[iter].data.sizeX + node.data.sizeX
+                        map_zero.remove(node)
+                        iter = iter - 1
+                    
+                        break
+
+                if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
+                    
+                    if node.data.sizeX == map_zero[iter].data.sizeX:
+                        
+                        map_zero[iter].data.sizeY = map_zero[iter].data.sizeY + node.data.sizeY
+                        map_zero.remove(node)
+                        iter = iter - 1
+
+                        break
+
+            iter = iter + 1
+
+        # Collapse map together (Value = 0)
+        iter = 0
+
+        while len(map_one) > iter + 1 and iter < MAX_ITER:
+
+            near_node_column = (map_one[iter].posX + map_one[iter].data.sizeX, map_one[iter].posY)
+            near_node_row = (map_one[iter].posX, map_one[iter].posY + map_one[iter].data.sizeY)
+
+            for node in map_one[iter:]:
+                
+                if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
+                    
+                    if node.data.sizeY == map_one[iter].data.sizeY:
+                        
+                        map_one[iter].data.sizeX = map_one[iter].data.sizeX + node.data.sizeX
+                        map_one.remove(node)
+                        iter = iter - 1
+                    
+                        break
+
+                if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
+                    
+                    if node.data.sizeX == map_one[iter].data.sizeX:
+                        
+                        map_one[iter].data.sizeY = map_one[iter].data.sizeY + node.data.sizeY
+                        map_one.remove(node)
+                        iter = iter - 1
+
+                        break
+
+            iter = iter + 1
+            
+
+        return map_zero + map_one
     
 
     # Show content in graph_map
     def show_graph(self):
 
         # get populated graph in form of list
-        graph = self.__graph_dump_engine()
+        graph = self.optimized_map
 
         # Show info of each node
         for node in graph:
@@ -140,9 +223,6 @@ class Map:
             print("Center Pos: ", node.data.get_center_pos())
             print("Size: ", node.data.sizeX, node.data.sizeY)
             print("Value: ", node.data.value)
-
-
-
 
         return None
 
