@@ -2,6 +2,7 @@ import math
 import pygame
 import numpy as np
 
+
 pygame.init()
 
 width = 1280
