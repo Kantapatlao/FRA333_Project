@@ -1,16 +1,19 @@
+import os
 import numpy as np
+import matplotlib.pyplot as plt
 from map_optimizer import Map
 
-
-
-a = np.zeros((3,4))
-b = np.ones((3,4))
-c = np.zeros((6,2))
-a = np.concatenate((a,b))
-a = np.concatenate((a,c),axis=1)
-a = a.astype(np.uint8)
-print(a)
-print('*' * 30)
-foo = Map(a)
-foo.show_graph()
-print(foo.optimized_map)
+dir_path = os.path.abspath("Map/")
+file_name = ["map1.npy","map2.npy","map3.npy","map4.npy","map5.npy"]
+i = 1
+for f in file_name[i-1:i]:
+    # print(os.path.join(dir_path,f))
+    m = np.load((os.path.join(dir_path, f)), allow_pickle=False)
+    foo = Map(m)
+    foo.show_graph()
+    print('*' * 30)
+    plt.imshow(m, cmap='grey', interpolation='nearest')
+    plt.axis('off')
+    plt.show()
+    
+    
