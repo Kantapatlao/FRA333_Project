@@ -36,6 +36,8 @@ class Discrete_map:
 class Map:
     
     def __init__(self, in_map):
+
+        MAX_COLLAPSE = 50
         
         # sanitize map input
         if type(in_map) is not np.ndarray:
@@ -64,7 +66,29 @@ class Map:
         
         self.full_map = in_map
         self.tree_map = self.__map_discretizer_engine(BT_Node(self.full_map, 0, 0))
-        self.optimized_map = self.__map_collapser()
+        self.optimized_map = self.__graph_dump_engine()
+
+        # Since __map_collapser() can't garantee fully collapsed map in one iteration
+        
+        last_node_size = len(self.optimized_map)
+        self.optimized_map = self.__map_collapser(self.optimized_map)
+        now_node_size = len(self.optimized_map) 
+        collapse_iter = 0
+
+        # Keep looping until map won't collapse anymore 
+        while last_node_size != now_node_size:
+
+            last_node_size = now_node_size
+            self.optimized_map = self.__map_collapser(self.optimized_map)
+            now_node_size = len(self.optimized_map)
+
+            # Max iteration stop condition
+            if collapse_iter > MAX_COLLAPSE:
+                print("Warning: Max iteration for doing map collapse is reached. Returning result.")
+                break
+
+            collapse_iter = collapse_iter + 1 
+
         
         return None
                 
@@ -121,7 +145,7 @@ class Map:
 
     # Join near by map with same value together
     # Note: Does not garantee to finished in single iteration
-    def __map_collapser(self):
+    def __map_collapser(self, graph):
 
         # Max iteration constant
         MAX_ITER = 10000
@@ -131,7 +155,7 @@ class Map:
         map_zero = []
         map_one = []
 
-        for node in self.__graph_dump_engine():
+        for node in graph:
             if node.data.value == 1:
                 map_one.append(node)
 
@@ -147,10 +171,10 @@ class Map:
         iter = 0
 
         # Iterate through each node
-        while len(map_zero) > iter + 1 and iter < MAX_ITER:
+        while len(map_zero) > iter + 1:
 
             # Max iteration stop condition
-            if iter < MAX_ITER:
+            if iter > MAX_ITER:
                 raise RuntimeError("Max iteration for collapsing map node is reached.")
             
             # Calculate position of adjacent node to search through
@@ -190,10 +214,10 @@ class Map:
         iter = 0
 
         # Iterate through each node
-        while len(map_one) > iter + 1 and iter < MAX_ITER:
+        while len(map_one) > iter + 1:
 
             # Max iteration stop condition
-            if iter < MAX_ITER:
+            if iter > MAX_ITER:
                 raise RuntimeError("Max iteration for collapsing map node is reached.")
             
 
