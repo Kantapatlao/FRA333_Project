@@ -119,7 +119,8 @@ class Map:
         return node
     
 
-    # Collapsed near by map with same value by joining them together
+    # Join near by map with same value together
+    # Note: Does not garantee to finished in single iteration
     def __map_collapser(self):
 
         # Max iteration constant
@@ -142,18 +143,27 @@ class Map:
             
 
 
-        # Collapse map together (Value = 0)
+        # Collapse adjacent map (with value = 0) back together
         iter = 0
 
+        # Iterate through each node
         while len(map_zero) > iter + 1 and iter < MAX_ITER:
 
+            # Max iteration stop condition
+            if iter < MAX_ITER:
+                raise RuntimeError("Max iteration for collapsing map node is reached.")
+            
+            # Calculate position of adjacent node to search through
             near_node_column = (map_zero[iter].posX + map_zero[iter].data.sizeX, map_zero[iter].posY)
             near_node_row = (map_zero[iter].posX, map_zero[iter].posY + map_zero[iter].data.sizeY)
 
+            # Search for adjacent node
             for node in map_zero[iter:]:
                 
+                # If found a node adjacent in the same row (but next column)
                 if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
                     
+                    # Check if the row size are same if yes, join them together
                     if node.data.sizeY == map_zero[iter].data.sizeY:
                         
                         map_zero[iter].data.sizeX = map_zero[iter].data.sizeX + node.data.sizeX
@@ -162,10 +172,12 @@ class Map:
                     
                         break
 
+                # If found a node adjacent in the same column (but next row)
                 if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
                     
+                    # Check if the column size are same if yes, join them together
                     if node.data.sizeX == map_zero[iter].data.sizeX:
-                        
+                         
                         map_zero[iter].data.sizeY = map_zero[iter].data.sizeY + node.data.sizeY
                         map_zero.remove(node)
                         iter = iter - 1
@@ -174,18 +186,28 @@ class Map:
 
             iter = iter + 1
 
-        # Collapse map together (Value = 0)
+        # Collapse adjacent map (with value = 1) back together
         iter = 0
 
+        # Iterate through each node
         while len(map_one) > iter + 1 and iter < MAX_ITER:
 
+            # Max iteration stop condition
+            if iter < MAX_ITER:
+                raise RuntimeError("Max iteration for collapsing map node is reached.")
+            
+
+            # Calculate position of adjacent node to search through
             near_node_column = (map_one[iter].posX + map_one[iter].data.sizeX, map_one[iter].posY)
             near_node_row = (map_one[iter].posX, map_one[iter].posY + map_one[iter].data.sizeY)
 
+            # Search for adjacent node
             for node in map_one[iter:]:
-                
+
+                # If found a node adjacent in the same row (but next column)
                 if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
                     
+                    # Check if the row size are same if yes, join them together
                     if node.data.sizeY == map_one[iter].data.sizeY:
                         
                         map_one[iter].data.sizeX = map_one[iter].data.sizeX + node.data.sizeX
@@ -194,8 +216,10 @@ class Map:
                     
                         break
 
+                # If found a node adjacent in the same column (but next row)
                 if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
                     
+                    # Check if the column size are same if yes, join them together
                     if node.data.sizeX == map_one[iter].data.sizeX:
                         
                         map_one[iter].data.sizeY = map_one[iter].data.sizeY + node.data.sizeY
