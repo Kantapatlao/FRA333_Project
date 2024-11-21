@@ -42,7 +42,7 @@ class Map:
             raise TypeError("in_map only take np.ndarray as input")
         
         if in_map.dtype != np.uint8:
-            raise TypeError("in_map numpy array only takes int8 as dtype")
+            raise TypeError("in_map numpy array only takes uint8 as dtype")
         
         # Check if input only contain 0 and 1
         if np.unique(in_map).size != 2:
@@ -60,7 +60,7 @@ class Map:
         
         self.full_map = in_map
         self.tree_map = self.__map_discretizer_engine(BT_Node(self.full_map, 0, 0))
-        self.optimized_map = self.__map_collapser()
+        # self.optimized_map = self.__map_collapser()
         
         return None
                 
@@ -118,6 +118,38 @@ class Map:
     # Collapsed near by map with same value by joining them together
     def __map_collapser(self):
 
+        unoptimized_map = self.__graph_dump_engine()
+        optimized_map = []
+
+        for node in unoptimized_map:
+
+
+        return None
+    
+
+    # Show content in graph_map
+    def show_graph(self):
+
+        # get populated graph in form of list
+        graph = self.__graph_dump_engine()
+
+        # Show info of each node
+        for node in graph:
+            print("Node: ", node)
+            print("Position: ", node.data.posX, node.data.posY)
+            print("Center Pos: ", node.data.get_center_pos())
+            print("Size: ", node.data.sizeX, node.data.sizeY)
+            print("Value: ", node.data.value)
+
+
+
+
+        return None
+
+
+    # Breadth first search engine
+    def __graph_dump_engine(self):
+        
         MAX_ITER = 100000
 
         # Breadth first search queue
@@ -149,28 +181,7 @@ class Map:
         return selected_node
 
 
+
+        
+
     
-
-    # Dump content in graph_map
-    def dump_graph(self):
-        self.__graph_dump_engine(self.tree_map)
-        return None
-
-    # Internal recursive engine
-    def __graph_dump_engine(self, node):
-
-        # Recursive stop condition: Node that don't have child
-        if node.childA is None:
-            print("Node: ", node)
-            print("Position: ", node.data.posX, node.data.posY)
-            print("Center Pos: ", node.data.get_center_pos())
-            print("Size: ", node.data.sizeX, node.data.sizeY)
-            print("Value: ", node.data.value)
-
-            return None
-
-        else:
-            self.__graph_dump_engine(node.childA)
-            self.__graph_dump_engine(node.childB)
-
-        return None
