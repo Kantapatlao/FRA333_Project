@@ -102,16 +102,15 @@ class RobotArm:
             text_surface = self.font.render(angle_text, True, black)
             screen.blit(text_surface, (slider_x, slider_y_start + i * slider_spacing - 30))
 
-
     def draw_position_info(self, screen):
         joints = self.get_joint_positions()
         
-        # Draw box for position information
+        # Box position info
         info_box_x = 20
         info_box_y = 400
         line_height = 30
         
-        # Draw background rectangle for position info
+        # Background rectangle for position info
         info_width = 280
         info_height = (len(joints) + 1) * line_height + 20
         pygame.draw.rect(screen, (40, 40, 40), 
@@ -122,7 +121,7 @@ class RobotArm:
         for i, pos in enumerate(joints[:-1]):  # All joints except end effector
             # Convert coordinates to be relative to origin
             rel_x = pos[0] - origin[0]
-            rel_y = -(pos[1] - origin[1])  # Invert Y for standard coordinate system
+            rel_y = -(pos[1] - origin[1])  
             
             text = f"Joint {i}: ({rel_x:.1f}, {rel_y:.1f})"
             text_surface = self.font.render(text, True, light_gray)
@@ -131,7 +130,7 @@ class RobotArm:
         # Draw end effector position
         end_pos = joints[-1]
         rel_x = end_pos[0] - origin[0]
-        rel_y = -(end_pos[1] - origin[1])  # Invert Y for standard coordinate system
+        rel_y = -(end_pos[1] - origin[1])  
         
         ee_text = f"End Effector: ({rel_x:.1f}, {rel_y:.1f})"
         text_surface = self.font.render(ee_text, True, green)
