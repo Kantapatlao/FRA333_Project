@@ -34,11 +34,12 @@ resized_map = cv2.resize(map_array, (new_width, new_height), interpolation=cv2.I
 # กลับสีภาพ
 inv_resized_map = np.ones((new_height, new_width), dtype=np.uint8) * 255
 inv_resized_map[resized_map == 1] = 0
+rgb_map = cv2.cvtColor(inv_resized_map, cv2.COLOR_GRAY2RGB)
 
 # save ภาพเป็น file on memory
 map_file = io.BytesIO(cv2.imencode(".png", inv_resized_map)[1])
 
-map_surface = pygame.image.frombuffer(cv2.imencode('.png', inv_resized_map)[1].tobytes(), (new_width, new_height), 'PNG')
+map_surface = pygame.image.frombuffer(rgb_map.tobytes(), (new_width, new_height), 'RGB')
 
 # Colors Pallet
 white = (255, 255, 255)
@@ -124,9 +125,11 @@ class RobotArm:
 
 # Main function
 def main():
-    display.blit(bg, (0,0))
+    screen = pygame.display.set_mode((width, height))
+    screen.fill(white)
+    screen.blit(bg, (0, 0))
     clock = pygame.time.Clock()
-    robot  = RobotArm()
+    robot = RobotArm()
     running = True
     
     while running:
@@ -147,31 +150,14 @@ def main():
                     if slider.update(event.pos[0]):
                         robot.update_from_slider()
 
-        screen = pygame.display.set_mode((width,height)).fill(white)
+        screen.fill(white)
         screen.blit(map_surface, ((width - new_width) // 2, (height - new_height) // 2))
         robot.draw(screen)
         robot.draw_sliders(screen)
         pygame.display.flip()
         clock.tick(FPS)
-    
-    
-    # for n in node_map.optimized_map:
-    #     if n.data.value == 1:
-    #         pygame.draw.rect(display, (0,0,0) ,Rect(n.data.posX * 10 ,n.data.posY * 10,n.data.sizeX * 10,n.data.sizeY * 10))
-        
-    #     if n.data.value == 0:
-    #         pygame.draw.rect(display, (255,255,255) ,Rect(n.data.posX * 10 ,n.data.posY * 10,n.data.sizeX * 10,n.data.sizeY * 10))
-    # pygame.display.flip()
-
-    # while running:
-        
-        
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             running = False
-        
 
     pygame.quit()
-    
+
 if __name__ == "__main__":
     main()
