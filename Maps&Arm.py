@@ -51,19 +51,30 @@ gray = (128, 128, 128)
 light_gray = (228, 228, 228)
 
 # Robot arm parameters
-Link_Lengths = [100, 100, 100]
-origin = (320, 600)
-joint_radius = 10
+Link_Lengths = [150, 150, 150]
+origin = (((width - new_width) // 2), ((height + new_height) // 2))
+joint_radius = 5
 
 # Slider settings
 slider_width, slider_height = 300, 10
-slider_x, slider_y_start, slider_spacing = 800, 100, 80
+slider_x, slider_y_start, slider_spacing = 950, 50, 60
 slider_handle_radius = 15
 
 display = pygame.display.set_mode((1280, 720))
 bg = pygame.image.load(map_file, "foo.png")
 node_map = Map(map_array)
 
+def draw_map_border(screen, map_surface, width, height, new_width, new_height):
+    # Calculate the position of the map on the screen
+    map_x = (width - new_width) // 2
+    map_y = (height - new_height) // 2
+    
+    # Draw border lines
+    pygame.draw.rect(screen, black, 
+        (map_x, map_y, new_width, new_height), 
+        2  # Line thickness of 2 pixels
+    )
+    
 class Slider:
     def __init__(self, x, y, width, height, min_val=-math.pi, max_val=math.pi):
         self.x, self.y = x, y
@@ -94,7 +105,7 @@ class RobotArm:
     def __init__(self):
         self.joint_angles = [0, 0, 0]
         self.sliders = [Slider(slider_x, slider_y_start + i * slider_spacing, slider_width, slider_height) for i in range(3)]
-        self.font = pygame.font.SysFont('Arial', 24)
+        self.font = pygame.font.SysFont('Arial', 18)
 
     def update_from_slider(self):
         for i, slider in enumerate(self.sliders):
@@ -111,6 +122,12 @@ class RobotArm:
             joints.append((x, y))
         return joints
 
+    def draw_angle_labels(self, screen):
+        for i, slider in enumerate(self.sliders):
+            angle_text = f"Joint {i+1}: {self.joint_angles[i]:.2f} rad"
+            text_surface = self.font.render(angle_text, True, black)
+            screen.blit(text_surface, (slider_x, slider_y_start + i * slider_spacing - 30))
+
     def draw(self, screen):
         joints = self.get_joint_positions()
         for i in range(len(joints) - 1):
@@ -118,7 +135,40 @@ class RobotArm:
         for joint in joints[:-1]:
             pygame.draw.circle(screen, blue, (int(joint[0]), int(joint[1])), joint_radius)
         pygame.draw.circle(screen, green, (int(joints[-1][0]), int(joints[-1][1])), 5)
+        
+        # Box position info
+        info_box_x = 20
+        info_box_y = 400
+        line_height = 30
+        
+        # Background rectangle for position info
+        info_width = 180
+        info_height = (len(joints) + 1) * line_height + 10
+        pygame.draw.rect(screen, (40, 40, 40), 
+                        (info_box_x - 10, info_box_y - 10,info_width, info_height))
+        # Draw joint positions
+        for i, pos in enumerate(joints[:-1]):  # All joints except end effector
+            # Convert coordinates to be relative to origin
+            rel_x = pos[0] - origin[0]
+            rel_y = -(pos[1] - origin[1])  
+            
+            text = f"Joint {i}: ({rel_x:.1f}, {rel_y:.1f})"
+            text_surface = self.font.render(text, True, light_gray)
+            screen.blit(text_surface, (info_box_x, info_box_y + i * line_height))
 
+        # Draw end effector position
+        end_pos = joints[-1]
+        rel_x = end_pos[0] - origin[0]
+        rel_y = -(end_pos[1] - origin[1])  
+        
+        ee_text = f"End Effector: ({rel_x:.1f}, {rel_y:.1f})"
+        text_surface = self.font.render(ee_text, True, green)
+        screen.blit(text_surface, (info_box_x, info_box_y + len(joints) * line_height))
+
+        # Draw origin position
+        pygame.draw.line(screen, black, (origin[0] - 10, origin[1]), (origin[0] + 10, origin[1]), 2)
+        pygame.draw.line(screen, black, (origin[0], origin[1] - 10), (origin[0], origin[1] + 10), 2)
+        
     def draw_sliders(self, screen):
         for slider in self.sliders:
             slider.draw(screen)
@@ -133,6 +183,15 @@ def main():
     running = True
     
     while running:
+        screen.fill(white)
+        screen.blit(map_surface, ((width - new_width) // 2, (height - new_height) // 2))
+        draw_map_border(screen, map_surface, width, height, new_width, new_height)
+
+        
+        robot.draw(screen)
+        robot.draw_sliders(screen)
+        pygame.display.flip()
+        clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -150,12 +209,7 @@ def main():
                     if slider.update(event.pos[0]):
                         robot.update_from_slider()
 
-        screen.fill(white)
-        screen.blit(map_surface, ((width - new_width) // 2, (height - new_height) // 2))
-        robot.draw(screen)
-        robot.draw_sliders(screen)
-        pygame.display.flip()
-        clock.tick(FPS)
+
 
     pygame.quit()
 
