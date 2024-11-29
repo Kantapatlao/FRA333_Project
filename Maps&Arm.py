@@ -74,7 +74,21 @@ def draw_map_border(screen, map_surface, width, height, new_width, new_height):
         (map_x, map_y, new_width, new_height), 
         2  # Line thickness of 2 pixels
     )
+
+def check_wall_collision(end_effector_pos, map_array, scale, origin):
+    # Convert end effector position to map coordinates
+    # First, adjust relative to origin and scale
+    rel_x = int((end_effector_pos[0] - origin[0]) / scale)
+    rel_y = int((origin[1] - end_effector_pos[1]) / scale)
     
+    # Check if the calculated position is within map bounds
+    if (0 <= rel_x < map_array.shape[1] and 
+        0 <= rel_y < map_array.shape[0]):
+        # Check if the pixel is black (wall)
+        return map_array[rel_y, rel_x] == 1
+    
+    return False
+
 class Slider:
     def __init__(self, x, y, width, height, min_val=-math.pi, max_val=math.pi):
         self.x, self.y = x, y
@@ -106,6 +120,7 @@ class RobotArm:
         self.joint_angles = [0, 0, 0]
         self.sliders = [Slider(slider_x, slider_y_start + i * slider_spacing, slider_width, slider_height) for i in range(3)]
         self.font = pygame.font.SysFont('Arial', 18)
+        self.collision_detected = False
 
     def update_from_slider(self):
         for i, slider in enumerate(self.sliders):
@@ -130,11 +145,26 @@ class RobotArm:
 
     def draw(self, screen):
         joints = self.get_joint_positions()
+        
+        self.collision_detected = check_wall_collision(
+            joints[-1],  # End effector position
+            map_array,   # Original map array
+            scale,       # Scaling factor
+            origin       # Origin point
+        )
+        
         for i in range(len(joints) - 1):
             pygame.draw.line(screen, black, joints[i], joints[i + 1], 4)
         for joint in joints[:-1]:
             pygame.draw.circle(screen, blue, (int(joint[0]), int(joint[1])), joint_radius)
-        pygame.draw.circle(screen, green, (int(joints[-1][0]), int(joints[-1][1])), 5)
+            end_effector_color = red if self.collision_detected else green
+            pygame.draw.circle(screen, end_effector_color, 
+                           (int(joints[-1][0]), int(joints[-1][1])), 5)
+            
+        if self.collision_detected:
+            warning_font = pygame.font.SysFont('Arial', 24)
+            warning_text = warning_font.render("WALL COLLISION!", True, red)
+            screen.blit(warning_text, (20, height - 50))
         
         # Box position info
         info_box_x = 20
