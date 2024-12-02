@@ -14,7 +14,7 @@ pygame.init()
 width, height = 1280, 720
 FPS = 60
 
-map_file_path = os.path.join(os.path.abspath("Map"), 'map1.npy')
+map_file_path = os.path.join(os.path.abspath("Map"), 'map2.npy')
 
 # โหลดข้อมูล numpy array จากไฟล์
 map_array = np.load(map_file_path)
@@ -74,23 +74,21 @@ def draw_map_border(screen, map_surface, width, height, new_width, new_height):
         (map_x, map_y, new_width, new_height), 2  # Line thickness of 2 pixels
     )
 
-def check_wall_collision(end_effector_pos, map_array, scale, origin):
+def check_wall_collision(point, map_surface, new_width, new_height, width, height):
     # Calculate the map's position on the screen
     map_x = (width - new_width) // 2
     map_y = (height - new_height) // 2
 
     # Convert end effector screen coordinates to map surface coordinates
-    relative_x = int(end_effector_pos[0] - map_x)
-    relative_y = int(end_effector_pos[1] - map_y)
+    relative_x = int(point[0] - map_x)
+    relative_y = int(point[1] - map_y)
 
     # Check if the point is within the map surface boundaries
     if (0 <= relative_x < new_width and 0 <= relative_y < new_height):
         # Get the pixel color at the point
         try:
             pixel_color = map_surface.get_at((relative_x, relative_y))
-            
             # Check if the pixel is black (wall)
-            # Adjust the threshold as needed
             return pixel_color == (0, 0, 0, 255)
         except Exception as e:
             print(f"Error checking pixel: {e}")
@@ -98,6 +96,16 @@ def check_wall_collision(end_effector_pos, map_array, scale, origin):
 
     return False
 
+def check_line_collision(start_point, end_point, map_surface, new_width, new_height, width, height, steps=20):
+    # Check multiple points along the line for collision
+    for i in range(steps + 1):
+        t = i / steps
+        x = start_point[0] + t * (end_point[0] - start_point[0])
+        y = start_point[1] + t * (end_point[1] - start_point[1])
+        
+        if check_wall_collision((x, y), map_surface, new_width, new_height, width, height):
+            return True
+    return False
 
 class Slider:
     def __init__(self, x, y, width, height, min_val=-math.pi, max_val=math.pi):
@@ -131,7 +139,30 @@ class RobotArm:
         self.sliders = [Slider(slider_x, slider_y_start + i * slider_spacing, slider_width, slider_height) for i in range(3)]
         self.font = pygame.font.SysFont('Arial', 18)
         self.collision_detected = False
-
+        self.collision_points = []  # Store collision points
+        self.collision_links = []   # Store links with collisions
+    
+    def check_arm_collision(self, map_surface, new_width, new_height, width, height):
+        # Reset collision tracking
+        self.collision_points = []
+        self.collision_links = []
+        
+        # Get all joint positions
+        joints = self.get_joint_positions()
+        
+        # Check each joint for collision
+        for i, joint in enumerate(joints[:-1]):  # Exclude end effector
+            if check_wall_collision(joint, map_surface, new_width, new_height, width, height):
+                self.collision_points.append((joint, i))
+        
+        # Check each link for collision
+        for i in range(len(joints) - 1):
+            if check_line_collision(joints[i], joints[i+1], map_surface, new_width, new_height, width, height):
+                self.collision_links.append((joints[i], joints[i+1], i))
+        
+        # Return True if any collision detected
+        return len(self.collision_points) > 0 or len(self.collision_links) > 0  
+    
     def update_from_slider(self):
         for i, slider in enumerate(self.sliders):
             self.joint_angles[i] = slider.value
@@ -156,20 +187,54 @@ class RobotArm:
     def draw(self, screen):
         joints = self.get_joint_positions()
         
-        self.collision_detected = check_wall_collision(joints[-1], map_array, scale, origin)
-        
+        collision_detected = self.check_arm_collision(
+            map_surface,  # Pygame surface of the map
+            new_width,    # Width of the resized map
+            new_height,   # Height of the resized map
+            width,        # Total screen width
+            height        # Total screen height
+        )
         for i in range(len(joints) - 1):
-            pygame.draw.line(screen, black, joints[i], joints[i + 1], 4)
+            # Check if this link is in collision
+            link_color = red if any(l[0] == joints[i] and l[1] == joints[i+1] for l in self.collision_links) else black
+            pygame.draw.line(screen, link_color, joints[i], joints[i + 1], 6 if link_color == red else 4)
+        
+        for i, joint in enumerate(joints[:-1]):
+            # Check if this joint is in collision
+            joint_color = red if any(p[0] == joint for p in self.collision_points) else blue
+            pygame.draw.circle(screen, joint_color, (int(joint[0]), int(joint[1])), joint_radius)
+        
+        end_effector_color = red if collision_detected else green
+        pygame.draw.circle(screen, end_effector_color, 
+                           (int(joints[-1][0]), int(joints[-1][1])), 5)
+        
         for joint in joints[:-1]:
             pygame.draw.circle(screen, blue, (int(joint[0]), int(joint[1])), joint_radius)
             end_effector_color = red if self.collision_detected else green
             pygame.draw.circle(screen, end_effector_color, (int(joints[-1][0]), int(joints[-1][1])), 5)
             
-        if self.collision_detected:
+        if collision_detected:
             warning_font = pygame.font.SysFont('Arial', 24)
             warning_text = warning_font.render("WALL COLLISION!", True, red)
             screen.blit(warning_text, (20, height - 50))
-        
+            
+        debug_font = pygame.font.SysFont('Arial', 18)
+        if self.collision_points:
+            for point, joint_index in self.collision_points:
+                debug_text = debug_font.render(
+                    f"Collision at Joint {joint_index}", 
+                    True, red
+                )
+                screen.blit(debug_text, (20, height - 100 - joint_index * 30))
+                
+        if self.collision_links:
+            for start, end, link_index in self.collision_links:
+                debug_text = debug_font.render(
+                    f"Collision on Link {link_index}", 
+                    True, red
+                )
+                screen.blit(debug_text, (20, height - 200 - link_index * 30))
+
         # Box position info
         info_box_x = 20
         info_box_y = 400
