@@ -4,7 +4,9 @@ import numpy as np
 import cv2
 import pygame
 from pygame.locals import *
+from Path_Finding.map_optimizer import Map
 
+file_name = ["map1.npy","map2.npy","map3.npy","map4.npy","map5.npy"]
 map_file_path = os.path.join(os.path.abspath("Map"), 'map1.npy')
 # โหลดข้อมูล numpy array จากไฟล์
 map_array = np.load(map_file_path)
@@ -42,5 +44,37 @@ while running:
     
     display.blit(bg, (0,0))
     pygame.display.flip()
+
+# map.py
+import numpy as np
+
+def load_map(filepath):
+    """Load a map from a .npy file."""
+    return np.load(filepath)
+
+def process_map(map_array):
+    """Process the map and return a scaled version."""
+    scale = 500 / max(map_array.shape)
+    new_size = (int(map_array.shape[1] * scale), int(map_array.shape[0] * scale))
+    return cv2.resize(map_array, new_size, interpolation=cv2.INTER_NEAREST)
+
+def save_map_as_image(map_array, output_path):
+    """Save the processed map as a PNG image."""
+    cv2.imwrite(output_path, map_array)
+
+import tkinter as tk
+from tkinter import filedialog
+
+
+
+# Create a simple UI
+root = tk.Tk()
+root.title("Map Processor")
+
+open_button = tk.Button(root, text="Open Map File", command=file_name)
+open_button.pack(pady=20)
+
+root.mainloop()
+
 
 pygame.quit()
