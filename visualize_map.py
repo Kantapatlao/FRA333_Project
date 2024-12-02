@@ -44,11 +44,13 @@ running = True
 display.blit(bg, (0,0))
 
 for n in node_map.optimized_map:
-    if n.data.value == 1:
-        pygame.draw.rect(display, (0,0,0) ,Rect(n.data.posX * 10 ,n.data.posY * 10,n.data.sizeX * 10,n.data.sizeY * 10))
+    if n.value == 1:
+        pygame.draw.rect(display, (0,0,0) ,Rect(n.posX * 10 ,n.posY * 10,n.sizeX * 10,n.sizeY * 10))
     
-    if n.data.value == 0:
-        pygame.draw.rect(display, (255,255,255) ,Rect(n.data.posX * 10 ,n.data.posY * 10,n.data.sizeX * 10,n.data.sizeY * 10))
+    if n.value == 0:
+        # pygame.draw.rect(display, (255,255,255) ,Rect(n.posX * 10 ,n.posY * 10,n.sizeX * 10,n.sizeY * 10))
+        pygame.draw.rect(display, (random.randint(100,200),random.randint(100,200),random.randint(100,200)) ,Rect(n.posX * 10 ,n.posY * 10,n.sizeX * 10,n.sizeY * 10))
+
 pygame.display.flip()
 
 while running:

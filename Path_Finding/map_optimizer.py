@@ -35,7 +35,7 @@ class Discrete_map:
 
     def get_buttom_right_pos(self):
 
-        return (self.posX + self.sizeX, self.posY + self.sizeY)
+        return (self.posX + self.sizeX)
 
 
 class Map:
@@ -161,14 +161,14 @@ class Map:
         map_one = []
 
         for node in graph:
-            if node.data.value == 1:
+            if node.value == 1:
                 map_one.append(node)
 
-            elif node.data.value == 0:
+            elif node.value == 0:
                 map_zero.append(node)
 
             else:
-                raise ValueError(f'Unknown value: {node.data.value} in discrete map array.')
+                raise ValueError(f'Unknown value: {node.value} in discrete map array.')
             
 
 
@@ -183,8 +183,8 @@ class Map:
                 raise RuntimeError("Max iteration for collapsing map node is reached.")
             
             # Calculate position of adjacent node to search through
-            near_node_column = (map_zero[iter].posX + map_zero[iter].data.sizeX, map_zero[iter].posY)
-            near_node_row = (map_zero[iter].posX, map_zero[iter].posY + map_zero[iter].data.sizeY)
+            near_node_column = (map_zero[iter].posX + map_zero[iter].sizeX, map_zero[iter].posY)
+            near_node_row = (map_zero[iter].posX, map_zero[iter].posY + map_zero[iter].sizeY)
 
             # Search for adjacent node
             for node in map_zero[iter:]:
@@ -193,9 +193,9 @@ class Map:
                 if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
                     
                     # Check if the row size are same if yes, join them together
-                    if node.data.sizeY == map_zero[iter].data.sizeY:
+                    if node.sizeY == map_zero[iter].sizeY:
                         
-                        map_zero[iter].data.sizeX = map_zero[iter].data.sizeX + node.data.sizeX
+                        map_zero[iter].sizeX = map_zero[iter].sizeX + node.sizeX
                         map_zero.remove(node)
                         iter = iter - 1
                     
@@ -205,9 +205,9 @@ class Map:
                 if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
                     
                     # Check if the column size are same if yes, join them together
-                    if node.data.sizeX == map_zero[iter].data.sizeX:
+                    if node.sizeX == map_zero[iter].sizeX:
                          
-                        map_zero[iter].data.sizeY = map_zero[iter].data.sizeY + node.data.sizeY
+                        map_zero[iter].sizeY = map_zero[iter].sizeY + node.sizeY
                         map_zero.remove(node)
                         iter = iter - 1
 
@@ -227,8 +227,8 @@ class Map:
             
 
             # Calculate position of adjacent node to search through
-            near_node_column = (map_one[iter].posX + map_one[iter].data.sizeX, map_one[iter].posY)
-            near_node_row = (map_one[iter].posX, map_one[iter].posY + map_one[iter].data.sizeY)
+            near_node_column = (map_one[iter].posX + map_one[iter].sizeX, map_one[iter].posY)
+            near_node_row = (map_one[iter].posX, map_one[iter].posY + map_one[iter].sizeY)
 
             # Search for adjacent node
             for node in map_one[iter:]:
@@ -237,9 +237,9 @@ class Map:
                 if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
                     
                     # Check if the row size are same if yes, join them together
-                    if node.data.sizeY == map_one[iter].data.sizeY:
+                    if node.sizeY == map_one[iter].sizeY:
                         
-                        map_one[iter].data.sizeX = map_one[iter].data.sizeX + node.data.sizeX
+                        map_one[iter].sizeX = map_one[iter].sizeX + node.sizeX
                         map_one.remove(node)
                         iter = iter - 1
                     
@@ -249,9 +249,9 @@ class Map:
                 if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
                     
                     # Check if the column size are same if yes, join them together
-                    if node.data.sizeX == map_one[iter].data.sizeX:
+                    if node.sizeX == map_one[iter].sizeX:
                         
-                        map_one[iter].data.sizeY = map_one[iter].data.sizeY + node.data.sizeY
+                        map_one[iter].sizeY = map_one[iter].sizeY + node.sizeY
                         map_one.remove(node)
                         iter = iter - 1
 
@@ -277,7 +277,7 @@ class Map:
 
 
         # Adjacent to the right
-        
+
 
 
         # Adjacent to the buttom
@@ -300,16 +300,13 @@ class Map:
     # Show content in graph_map
     def show_graph(self):
 
-        # get populated graph in form of list
-        graph = self.optimized_map
-
         # Show info of each node
-        for node in graph:
+        for node in self.optimized_map:
             print("Node: ", node)
-            print("Position: ", node.data.posX, node.data.posY)
-            print("Center Pos: ", node.data.get_center_pos())
-            print("Size: ", node.data.sizeX, node.data.sizeY)
-            print("Value: ", node.data.value)
+            print("Position: ", node.posX, node.posY)
+            print("Center Pos: ", node.get_center_pos())
+            print("Size: ", node.sizeX, node.sizeY)
+            print("Value: ", node.value)
 
         return None
 
@@ -333,7 +330,7 @@ class Map:
 
 
             if node_queue[queue_iter].data is not None:
-                selected_node.append(node_queue[queue_iter])
+                selected_node.append(node_queue[queue_iter].data)
 
             if node_queue[queue_iter].childA is not None:
                 node_queue.append(node_queue[queue_iter].childA)
