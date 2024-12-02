@@ -51,14 +51,14 @@ gray = (128, 128, 128)
 light_gray = (228, 228, 228)
 
 # Robot arm parameters
-Link_Lengths = [150, 150, 150]
+Link_Lengths = [167, 167, 167]
 origin = (((width - new_width) // 2), ((height + new_height) // 2))
 joint_radius = 5
 
 # Slider settings
 slider_width, slider_height = 300, 10
 slider_x, slider_y_start, slider_spacing = 950, 50, 60
-slider_handle_radius = 15
+slider_handle_radius = 10
 
 display = pygame.display.set_mode((1280, 720))
 bg = pygame.image.load(map_file, "foo.png")
@@ -71,27 +71,24 @@ def draw_map_border(screen, map_surface, width, height, new_width, new_height):
     
     # Draw border lines
     pygame.draw.rect(screen, black, 
-        (map_x, map_y, new_width, new_height), 
-        2  # Line thickness of 2 pixels
+        (map_x, map_y, new_width, new_height), 2  # Line thickness of 2 pixels
     )
 
-def check_wall_collision(end_effector_pos, map_array, scale, origin):
+def check_wall_collision(point, map_surface, new_width, new_height, width, height):
     # Calculate the map's position on the screen
     map_x = (width - new_width) // 2
     map_y = (height - new_height) // 2
 
     # Convert end effector screen coordinates to map surface coordinates
-    relative_x = int(end_effector_pos[0] - map_x)
-    relative_y = int(end_effector_pos[1] - map_y)
+    relative_x = int(point[0] - map_x)
+    relative_y = int(point[1] - map_y)
 
     # Check if the point is within the map surface boundaries
     if (0 <= relative_x < new_width and 0 <= relative_y < new_height):
         # Get the pixel color at the point
         try:
             pixel_color = map_surface.get_at((relative_x, relative_y))
-            
             # Check if the pixel is black (wall)
-            # Adjust the threshold as needed
             return pixel_color == (0, 0, 0, 255)
         except Exception as e:
             print(f"Error checking pixel: {e}")
@@ -99,6 +96,16 @@ def check_wall_collision(end_effector_pos, map_array, scale, origin):
 
     return False
 
+def check_line_collision(start_point, end_point, map_surface, new_width, new_height, width, height, steps=20):
+    # Check multiple points along the line for collision
+    for i in range(steps + 1):
+        t = i / steps
+        x = start_point[0] + t * (end_point[0] - start_point[0])
+        y = start_point[1] + t * (end_point[1] - start_point[1])
+        
+        if check_wall_collision((x, y), map_surface, new_width, new_height, width, height):
+            return True
+    return False
 
 class Slider:
     def __init__(self, x, y, width, height, min_val=-math.pi, max_val=math.pi):
@@ -180,8 +187,13 @@ class RobotArm:
     def draw(self, screen):
         joints = self.get_joint_positions()
         
-        self.collision_detected = check_wall_collision(joints[-1], map_array, scale, origin)
-        
+        collision_detected = self.check_arm_collision(
+            map_surface,  # Pygame surface of the map
+            new_width,    # Width of the resized map
+            new_height,   # Height of the resized map
+            width,        # Total screen width
+            height        # Total screen height
+        )
         for i in range(len(joints) - 1):
             # Check if this link is in collision
             link_color = red if any(l[0] == joints[i] and l[1] == joints[i+1] for l in self.collision_links) else black
@@ -199,8 +211,7 @@ class RobotArm:
         for joint in joints[:-1]:
             pygame.draw.circle(screen, blue, (int(joint[0]), int(joint[1])), joint_radius)
             end_effector_color = red if self.collision_detected else green
-            pygame.draw.circle(screen, end_effector_color, 
-                           (int(joints[-1][0]), int(joints[-1][1])), 5)
+            pygame.draw.circle(screen, end_effector_color, (int(joints[-1][0]), int(joints[-1][1])), 5)
             
         if collision_detected:
             warning_font = pygame.font.SysFont('Arial', 24)
@@ -262,80 +273,6 @@ class RobotArm:
             slider.draw(screen)
 
 # Main function
-class RobotArm:
-    def __init__(self):
-        self.joint_angles = [0, 0, 0]
-        self.sliders = [Slider(slider_x, slider_y_start + i * slider_spacing, slider_width, slider_height) for i in range(3)]
-        self.font = pygame.font.SysFont('Arial', 18)
-        self.collision_detected = False
-        self.out_of_bounds = False
-
-    def update_from_slider(self):
-        # Backup current joint angles in case of invalid moves
-        previous_angles = self.joint_angles[:]
-        for i, slider in enumerate(self.sliders):
-            self.joint_angles[i] = slider.value
-
-        # Validate new positions
-        if self.check_out_of_bounds(self.get_joint_positions()):
-            # Revert to previous angles if out of bounds
-            self.joint_angles = previous_angles
-            for i, slider in enumerate(self.sliders):
-                slider.value = previous_angles[i]
-
-    def get_joint_positions(self):
-        joints = [origin]
-        current_angle = 0
-        x, y = origin
-        for i, length in enumerate(Link_Lengths):
-            current_angle += self.joint_angles[i]
-            x += length * math.cos(current_angle)
-            y += length * math.sin(current_angle)
-            joints.append((x, y))
-        return joints
-
-    def check_out_of_bounds(self, joints):
-        # Map boundaries
-        map_x = (width - new_width) // 2
-        map_y = (height - new_height) // 2
-
-        # Check if all joints are within map boundaries
-        for joint in joints:
-            if not (map_x <= joint[0] <= map_x + new_width and map_y <= joint[1] <= map_y + new_height):
-                return True
-        return False
-
-    def draw(self, screen):
-        joints = self.get_joint_positions()
-        self.collision_detected = check_wall_collision(joints[-1], map_array, scale, origin)
-
-        # Draw robot arm
-        for i in range(len(joints) - 1):
-            pygame.draw.line(screen, black, joints[i], joints[i + 1], 4)
-
-        # Draw joints
-        for joint in joints[:-1]:
-            pygame.draw.circle(screen, blue, (int(joint[0]), int(joint[1])), joint_radius)
-
-        # Draw end effector
-        end_effector_color = red if self.collision_detected else green
-        pygame.draw.circle(screen, end_effector_color, (int(joints[-1][0]), int(joints[-1][1])), 5)
-
-        # Draw angle labels
-        self.draw_angle_labels(screen)
-
-    def draw_angle_labels(self, screen):
-        for i, slider in enumerate(self.sliders):
-            angle_text = f"Joint {i+1}: {self.joint_angles[i]:.2f} rad"
-            text_surface = self.font.render(angle_text, True, black)
-            screen.blit(text_surface, (slider_x, slider_y_start + i * slider_spacing - 30))
-
-    def draw_sliders(self, screen):
-        for slider in self.sliders:
-            slider.draw(screen)
-
-
-# Main function
 def main():
     screen = pygame.display.set_mode((width, height))
     screen.fill(white)
@@ -343,17 +280,16 @@ def main():
     clock = pygame.time.Clock()
     robot = RobotArm()
     running = True
-
+    
     while running:
         screen.fill(white)
         screen.blit(map_surface, ((width - new_width) // 2, (height - new_height) // 2))
         draw_map_border(screen, map_surface, width, height, new_width, new_height)
-
+        
         robot.draw(screen)
         robot.draw_sliders(screen)
         pygame.display.flip()
         clock.tick(FPS)
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -372,8 +308,8 @@ def main():
                         robot.update_from_slider()
         robot.update_from_slider()
 
-    pygame.quit()
 
+    pygame.quit()
 
 if __name__ == "__main__":
     main()
