@@ -31,6 +31,11 @@ class Discrete_map:
         y = self.posY + math.floor(self.sizeY / 2)
 
         return (x,y)
+    
+
+    def get_buttom_right_pos(self):
+
+        return (self.posX + self.sizeX, self.posY + self.sizeY)
 
 
 class Map:
@@ -257,6 +262,40 @@ class Map:
 
         return map_zero + map_one
     
+
+    # Find adjacent node of input node
+    def find_adjacent_node(self, input_node):
+
+        # Check input type
+        if type(input_node) is not Discrete_map:
+            raise TypeError("input_node only take Discrete_map object as input.")
+        
+
+        # Declare a list to store adjacent node
+        adjacent_node = []
+
+
+
+        # Adjacent to the right
+        
+
+
+        # Adjacent to the buttom
+        
+        
+        
+        # Adjacent to the left
+        
+        
+        
+        # Adjacent to the top
+
+
+
+
+
+        return adjacent_node
+
 
     # Show content in graph_map
     def show_graph(self):
