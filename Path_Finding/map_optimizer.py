@@ -274,12 +274,14 @@ class Map:
         # Declare a list to store adjacent node
         adjacent_node = []
 
-        # find node that is adjacent to the right (ignore Y position(posY) for now)
+        # Adjacent to the right
+        # find node that are on the same X coordinate as right side of input node (ignore Y position(posY) for now)
         candidate_node = []
         for n in self.optimized_map:
-            if n.posX == input_node.get_bottom_right_pos()[0] + 1 and n != input_node and n.value == 0:
+            if n.posX == input_node.get_bottom_right_pos()[0] + 1 and n.value == 0:
                 candidate_node.append(n)
         
+        # Sort candidate according to Y position (posY attribute)
         candidate_node = sorted(candidate_node, key = lambda n: n.posY)
 
         # Linear search adjacent node from canidate list
@@ -318,16 +320,19 @@ class Map:
         adjacent_node = adjacent_node + candidate_node
 
         # Adjacent to the bottom
-        # find node that is adjacent to the bottom (ignore X position(posX) for now)
+        # find node that are on the same Y coordinate as bottom side of input node (ignore X position(posX) for now)
         candidate_node = []
         for n in self.optimized_map:
-            if n.posY == input_node.get_bottom_right_pos()[1] + 1 and n != input_node and n.value == 0:
+            if n.posY == input_node.get_bottom_right_pos()[1] + 1 and n.value == 0:
                 candidate_node.append(n)
         
+        # Sort candidate according to Y position (posY attribute)
         candidate_node = sorted(candidate_node, key = lambda n: n.posX)
 
         # Linear search adjacent node from canidate list
         did_truncate = False
+
+        # Remove node in front that doesn't sit adjacent to the input_node
         for i, n in enumerate(candidate_node):
 
             if n.posX == input_node.posX:
@@ -340,11 +345,11 @@ class Map:
                 did_truncate = True
                 break
 
-        
+        # Handle edge case which where the last node is still leading the input_node edge
         if not did_truncate:
             candidate_node = candidate_node[len(candidate_node)-1:]
 
-
+        # Remove node in the back that doesn't sit adjacent to the input_node
         for i, n in enumerate(candidate_node):
 
             if n.posX == input_node.posX + input_node.sizeX:
@@ -355,21 +360,24 @@ class Map:
                 candidate_node = candidate_node[:i]
                 break
 
-            
+        # Append remaining node (Node that is adjacent to input_node) to adjacent_node
         adjacent_node = adjacent_node + candidate_node
         
         
         # Adjacent to the left
-        # find node that is adjacent to the left (ignore Y position(posY) for now)
+        # find node that are on the same X coordinate as left side of input node (ignore Y position(posY) for now)
         candidate_node = []
         for n in self.optimized_map:
-            if n.get_bottom_right_pos()[0] == input_node.posX - 1 and n != input_node and n.value == 0:
+            if n.get_bottom_right_pos()[0] == input_node.posX - 1 and n.value == 0:
                 candidate_node.append(n)
-        
+
+        # Sort candidate according to Y position (posY attribute)
         candidate_node = sorted(candidate_node, key = lambda n: n.posY)
 
         # Linear search adjacent node from canidate list
         did_truncate = False
+
+        # Remove node in front that doesn't sit adjacent to the input_node
         for i, n in enumerate(candidate_node):
 
             if n.posY == input_node.posY:
@@ -382,11 +390,11 @@ class Map:
                 did_truncate = True
                 break
 
-        
+        # Handle edge case which where the last node is still leading the input_node edge
         if not did_truncate:
             candidate_node = candidate_node[len(candidate_node)-1:]
 
-
+        # Remove node in the back that doesn't sit adjacent to the input_node
         for i, n in enumerate(candidate_node):
 
             if n.posY == input_node.posY + input_node.sizeY:
@@ -398,20 +406,24 @@ class Map:
                 break
 
             
+        # Append remaining node (Node that is adjacent to input_node) to adjacent_node
         adjacent_node = adjacent_node + candidate_node
         
         
         # Adjacent to the top
-        # find node that is adjacent to the top (ignore X position(posX) for now)
+        # find node that are on the same Y coordinate as top side of input node (ignore X position(posX) for now)
         candidate_node = []
         for n in self.optimized_map:
-            if n.get_bottom_right_pos()[1] == input_node.posY - 1 and n != input_node and n.value == 0:
+            if n.get_bottom_right_pos()[1] == input_node.posY - 1 and n.value == 0:
                 candidate_node.append(n)
         
+        # Sort candidate according to Y position (posY attribute)
         candidate_node = sorted(candidate_node, key = lambda n: n.posX)
 
         # Linear search adjacent node from canidate list
         did_truncate = False
+        
+        # Remove node in front that doesn't sit adjacent to the input_node
         for i, n in enumerate(candidate_node):
 
             if n.posX == input_node.posX:
@@ -424,11 +436,11 @@ class Map:
                 did_truncate = True
                 break
 
-        
+        # Handle edge case which where the last node is still leading the input_node edge
         if not did_truncate:
             candidate_node = candidate_node[len(candidate_node)-1:]
 
-
+        # Remove node in the back that doesn't sit adjacent to the input_node
         for i, n in enumerate(candidate_node):
 
             if n.posX == input_node.posX + input_node.sizeX:
@@ -439,11 +451,8 @@ class Map:
                 candidate_node = candidate_node[:i]
                 break
 
-            
+        # Append remaining node (Node that is adjacent to input_node) to adjacent_node
         adjacent_node = adjacent_node + candidate_node
-
-
-
 
         return adjacent_node
 
