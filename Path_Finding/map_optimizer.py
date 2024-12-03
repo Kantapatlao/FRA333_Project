@@ -291,11 +291,9 @@ class Map:
                 break
 
             elif n.posY > input_node.posY:
-                candidate_node = candidate_node[i:]
+                candidate_node = candidate_node[i-1:]
                 break
 
-            else:
-                candidate_node = candidate_node[i:]
 
         for i, n in enumerate(candidate_node):
 
