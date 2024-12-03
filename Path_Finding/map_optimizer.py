@@ -35,7 +35,7 @@ class Discrete_map:
 
     def get_buttom_right_pos(self):
 
-        return (self.posX + self.sizeX)
+        return (self.posX + self.sizeX - 1, self.posY + self.sizeY - 1)
 
 
 class Map:
@@ -274,11 +274,37 @@ class Map:
         # Declare a list to store adjacent node
         adjacent_node = []
 
+        # find node that is adjacent to the right (ignore Y position(posY) for now)
+        candidate_node = []
+        for n in self.optimized_map:
+            if n.posX == input_node.get_buttom_right_pos()[0] + 1 and n != input_node and n.value == 0:
+                candidate_node.append(n)
+        
+        candidate_node = sorted(candidate_node, key = lambda n: n.posY)
 
+        # Linear search adjacent node from canidate list
+        
+        for i, n in enumerate(candidate_node):
 
-        # Adjacent to the right
+            if n.posY == input_node.posY:
+                candidate_node = candidate_node[i:]
+                break
 
+            elif n.posY > input_node.posY:
+                candidate_node = candidate_node[i:]
+                break
 
+            else:
+                candidate_node = candidate_node[i:]
+
+        for i, n in enumerate(candidate_node):
+
+            if n.posY >= input_node.posY + input_node.sizeY:
+                candidate_node = candidate_node[:i+1]
+                break
+
+            
+        adjacent_node = adjacent_node + candidate_node
 
         # Adjacent to the buttom
         
@@ -294,7 +320,8 @@ class Map:
 
 
 
-        return adjacent_node
+        return candidate_node
+        # return adjacent_node
 
 
     # Show content in graph_map
