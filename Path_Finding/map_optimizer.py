@@ -283,29 +283,76 @@ class Map:
         candidate_node = sorted(candidate_node, key = lambda n: n.posY)
 
         # Linear search adjacent node from canidate list
+        did_truncate = False
         
         for i, n in enumerate(candidate_node):
 
             if n.posY == input_node.posY:
                 candidate_node = candidate_node[i:]
+                did_truncate = True
                 break
 
             elif n.posY > input_node.posY:
                 candidate_node = candidate_node[i-1:]
+                did_truncate = True
                 break
 
+        if not did_truncate:
+            candidate_node = candidate_node[len(candidate_node)-1:]
 
         for i, n in enumerate(candidate_node):
 
-            if n.posY >= input_node.posY + input_node.sizeY:
+            if n.posY == input_node.posY + input_node.sizeY:
                 candidate_node = candidate_node[:i+1]
+                break
+
+            elif n.posY > input_node.posY + input_node.sizeY:
+                candidate_node = candidate_node[:i]
                 break
 
             
         adjacent_node = adjacent_node + candidate_node
 
-        # Adjacent to the buttom
+        # Adjacent to the bottom
+        # find node that is adjacent to the bottom (ignore X position(posX) for now)
+        candidate_node = []
+        for n in self.optimized_map:
+            if n.posY == input_node.get_buttom_right_pos()[1] + 1 and n != input_node and n.value == 0:
+                candidate_node.append(n)
         
+        candidate_node = sorted(candidate_node, key = lambda n: n.posX)
+
+        # Linear search adjacent node from canidate list
+        did_truncate = False
+        for i, n in enumerate(candidate_node):
+
+            if n.posX == input_node.posX:
+                candidate_node = candidate_node[i:]
+                did_truncate = True
+                break
+
+            elif n.posX > input_node.posX:
+                candidate_node = candidate_node[i-1:]
+                did_truncate = True
+                break
+
+        
+        if not did_truncate:
+            candidate_node = candidate_node[len(candidate_node)-1:]
+
+
+        for i, n in enumerate(candidate_node):
+
+            if n.posX == input_node.posX + input_node.sizeX:
+                candidate_node = candidate_node[:i+1]
+                break
+
+            elif n.posX > input_node.posX + input_node.sizeX:
+                candidate_node = candidate_node[:i]
+                break
+
+            
+        adjacent_node = adjacent_node + candidate_node
         
         
         # Adjacent to the left
@@ -318,8 +365,8 @@ class Map:
 
 
 
-        return candidate_node
-        # return adjacent_node
+        # return candidate_node
+        return adjacent_node
 
 
     # Show content in graph_map

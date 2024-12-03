@@ -10,8 +10,8 @@ file_name = "map1.npy"
 
 m = np.load((os.path.join(dir_path, file_name)), allow_pickle=False)
 foo = Map(m)
-random_node = random.randint(0,len(foo.optimized_map) - 1)
-# random_node = 7
+# random_node = random.randint(0,len(foo.optimized_map) - 1)
+random_node = 16
 test_case = foo.optimized_map[random_node]
 
 new_m = np.copy(m)
