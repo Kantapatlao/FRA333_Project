@@ -33,7 +33,7 @@ class Discrete_map:
         return (x,y)
     
 
-    def get_buttom_right_pos(self):
+    def get_bottom_right_pos(self):
 
         return (self.posX + self.sizeX - 1, self.posY + self.sizeY - 1)
 
@@ -277,7 +277,7 @@ class Map:
         # find node that is adjacent to the right (ignore Y position(posY) for now)
         candidate_node = []
         for n in self.optimized_map:
-            if n.posX == input_node.get_buttom_right_pos()[0] + 1 and n != input_node and n.value == 0:
+            if n.posX == input_node.get_bottom_right_pos()[0] + 1 and n != input_node and n.value == 0:
                 candidate_node.append(n)
         
         candidate_node = sorted(candidate_node, key = lambda n: n.posY)
@@ -285,6 +285,7 @@ class Map:
         # Linear search adjacent node from canidate list
         did_truncate = False
         
+        # Remove node in front that doesn't sit adjacent to the input_node
         for i, n in enumerate(candidate_node):
 
             if n.posY == input_node.posY:
@@ -297,9 +298,11 @@ class Map:
                 did_truncate = True
                 break
 
+        # Handle edge case which where the last node is still leading the input_node edge
         if not did_truncate:
             candidate_node = candidate_node[len(candidate_node)-1:]
 
+        # Remove node in the back that doesn't sit adjacent to the input_node
         for i, n in enumerate(candidate_node):
 
             if n.posY == input_node.posY + input_node.sizeY:
@@ -310,14 +313,15 @@ class Map:
                 candidate_node = candidate_node[:i]
                 break
 
-            
+        
+        # Append remaining node (Node that is adjacent to input_node) to adjacent_node
         adjacent_node = adjacent_node + candidate_node
 
         # Adjacent to the bottom
         # find node that is adjacent to the bottom (ignore X position(posX) for now)
         candidate_node = []
         for n in self.optimized_map:
-            if n.posY == input_node.get_buttom_right_pos()[1] + 1 and n != input_node and n.value == 0:
+            if n.posY == input_node.get_bottom_right_pos()[1] + 1 and n != input_node and n.value == 0:
                 candidate_node.append(n)
         
         candidate_node = sorted(candidate_node, key = lambda n: n.posX)
@@ -356,16 +360,91 @@ class Map:
         
         
         # Adjacent to the left
+        # find node that is adjacent to the left (ignore Y position(posY) for now)
+        candidate_node = []
+        for n in self.optimized_map:
+            if n.get_bottom_right_pos()[0] == input_node.posX - 1 and n != input_node and n.value == 0:
+                candidate_node.append(n)
         
+        candidate_node = sorted(candidate_node, key = lambda n: n.posY)
+
+        # Linear search adjacent node from canidate list
+        did_truncate = False
+        for i, n in enumerate(candidate_node):
+
+            if n.posY == input_node.posY:
+                candidate_node = candidate_node[i:]
+                did_truncate = True
+                break
+
+            elif n.posY > input_node.posY:
+                candidate_node = candidate_node[i-1:]
+                did_truncate = True
+                break
+
+        
+        if not did_truncate:
+            candidate_node = candidate_node[len(candidate_node)-1:]
+
+
+        for i, n in enumerate(candidate_node):
+
+            if n.posY == input_node.posY + input_node.sizeY:
+                candidate_node = candidate_node[:i+1]
+                break
+
+            elif n.posY > input_node.posY + input_node.sizeY:
+                candidate_node = candidate_node[:i]
+                break
+
+            
+        adjacent_node = adjacent_node + candidate_node
         
         
         # Adjacent to the top
+        # find node that is adjacent to the top (ignore X position(posX) for now)
+        candidate_node = []
+        for n in self.optimized_map:
+            if n.get_bottom_right_pos()[1] == input_node.posY - 1 and n != input_node and n.value == 0:
+                candidate_node.append(n)
+        
+        candidate_node = sorted(candidate_node, key = lambda n: n.posX)
+
+        # Linear search adjacent node from canidate list
+        did_truncate = False
+        for i, n in enumerate(candidate_node):
+
+            if n.posX == input_node.posX:
+                candidate_node = candidate_node[i:]
+                did_truncate = True
+                break
+
+            elif n.posX > input_node.posX:
+                candidate_node = candidate_node[i-1:]
+                did_truncate = True
+                break
+
+        
+        if not did_truncate:
+            candidate_node = candidate_node[len(candidate_node)-1:]
+
+
+        for i, n in enumerate(candidate_node):
+
+            if n.posX == input_node.posX + input_node.sizeX:
+                candidate_node = candidate_node[:i+1]
+                break
+
+            elif n.posX > input_node.posX + input_node.sizeX:
+                candidate_node = candidate_node[:i]
+                break
+
+            
+        adjacent_node = adjacent_node + candidate_node
 
 
 
 
-
-        # return candidate_node
         return adjacent_node
 
 
