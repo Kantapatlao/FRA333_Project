@@ -14,7 +14,7 @@ pygame.init()
 width, height = 1280, 720
 FPS = 60
 
-map_file_path = os.path.join(os.path.abspath("Map"), 'map2.npy')
+map_file_path = os.path.join(os.path.abspath("Map"), 'map1.npy')
 
 # โหลดข้อมูล numpy array จากไฟล์
 map_array = np.load(map_file_path)
@@ -38,7 +38,6 @@ rgb_map = cv2.cvtColor(inv_resized_map, cv2.COLOR_GRAY2RGB)
 
 # save ภาพเป็น file on memory
 map_file = io.BytesIO(cv2.imencode(".png", inv_resized_map)[1])
-
 map_surface = pygame.image.frombuffer(rgb_map.tobytes(), (new_width, new_height), 'RGB')
 
 # Colors Pallet
@@ -63,6 +62,45 @@ slider_handle_radius = 10
 display = pygame.display.set_mode((1280, 720))
 bg = pygame.image.load(map_file, "foo.png")
 node_map = Map(map_array)
+
+def is_within_map_borders(point, map_rect):
+    return map_rect.collidepoint(point)
+
+def generate_random_target(map_surface, new_width, new_height, width, height):
+    map_x = (width - new_width) // 2
+    map_y = (height - new_height) // 2
+    
+    while True:
+        rand_x = random.randint(map_x, map_x + new_width - 1)
+        rand_y = random.randint(map_y, map_y + new_height - 1)
+        if not check_wall_collision((rand_x, rand_y), map_surface, new_width, new_height, width, height):
+            return rand_x, rand_y
+
+def inverse_kinematics(target, origin, link_lengths, map_rect):
+    
+    if not is_within_map_borders(target, map_rect):
+        return  None
+    
+    x, y = target[0] - origin[0], -(target[1] - origin[1])  # Adjust for screen coordinates
+    d = math.sqrt(x**2 + y**2)
+
+    if d > sum(link_lengths):
+        return None  # Target out of reach
+
+    # Law of Cosines to find angles
+    angle1 = math.atan2(y, x)
+    cos_angle2 = (link_lengths[0]**2 + d**2 - link_lengths[1]**2) / (2 * link_lengths[0] * d)
+    angle2 = math.acos(min(max(cos_angle2, -1), 1))
+
+    cos_angle3 = (link_lengths[0]**2 + link_lengths[1]**2 - d**2) / (2 * link_lengths[0] * link_lengths[1])
+    angle3 = math.acos(min(max(cos_angle3, -1), 1))
+
+    joint_angles = [
+        angle1 + angle2,
+        math.pi - angle3,
+        0  # Third joint angle is not used for planar 2-link arm
+    ]
+    return joint_angles
 
 def draw_map_border(screen, map_surface, width, height, new_width, new_height):
     # Calculate the position of the map on the screen
@@ -274,17 +312,37 @@ class RobotArm:
 
 # Main function
 def main():
+    target = generate_random_target(map_surface, new_width, new_height, width, height)
+    target_reached = False
     screen = pygame.display.set_mode((width, height))
     screen.fill(white)
     screen.blit(bg, (0, 0))
     clock = pygame.time.Clock()
     robot = RobotArm()
     running = True
+    map_x = (width - new_width) // 2
+    map_y = (height - new_height) // 2
+    map_border_rect = pygame.Rect(map_x, map_y, new_width, new_height)
     
     while running:
         screen.fill(white)
         screen.blit(map_surface, ((width - new_width) // 2, (height - new_height) // 2))
         draw_map_border(screen, map_surface, width, height, new_width, new_height)
+        
+        pygame.draw.circle(screen, red, target, 5)
+        
+        if not target_reached:
+        # Compute joint angles for the target
+            angles = inverse_kinematics(target, origin, Link_Lengths,map_border_rect)
+        
+        if angles:
+            robot.joint_angles = angles
+            robot.update_from_slider()
+
+        # Check if end effector has reached the target
+        end_effector = robot.get_joint_positions()[-1]
+        if math.dist(end_effector, target) < 5:
+            target_reached = True
         
         robot.draw(screen)
         robot.draw_sliders(screen)
