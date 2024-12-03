@@ -14,7 +14,7 @@ pygame.init()
 width, height = 1280, 720
 FPS = 60
 
-map_file_path = os.path.join(os.path.abspath("Map"), 'map2.npy')
+map_file_path = os.path.join(os.path.abspath("Map"), 'map1.npy')
 
 # โหลดข้อมูล numpy array จากไฟล์
 map_array = np.load(map_file_path)
@@ -64,6 +64,18 @@ display = pygame.display.set_mode((1280, 720))
 bg = pygame.image.load(map_file, "foo.png")
 node_map = Map(map_array)
 
+def is_point_inside_map(point, map_surface, new_width, new_height, width, height):
+    # Calculate the map's position on the screen
+    map_x = (width - new_width) // 2
+    map_y = (height - new_height) // 2
+
+    # Convert point screen coordinates to map surface coordinates
+    relative_x = int(point[0] - map_x)
+    relative_y = int(point[1] - map_y)
+
+    # Check if the point is within the map surface boundaries
+    return (0 <= relative_x < new_width and 0 <= relative_y < new_height)
+
 def draw_map_border(screen, map_surface, width, height, new_width, new_height):
     # Calculate the position of the map on the screen
     map_x = (width - new_width) // 2
@@ -76,6 +88,9 @@ def draw_map_border(screen, map_surface, width, height, new_width, new_height):
 
 def check_wall_collision(point, map_surface, new_width, new_height, width, height):
     # Calculate the map's position on the screen
+    if not is_point_inside_map(point, map_surface, new_width, new_height, width, height):
+        return True  # Outside map is considered a collision
+    
     map_x = (width - new_width) // 2
     map_y = (height - new_height) // 2
 
@@ -84,17 +99,13 @@ def check_wall_collision(point, map_surface, new_width, new_height, width, heigh
     relative_y = int(point[1] - map_y)
 
     # Check if the point is within the map surface boundaries
-    if (0 <= relative_x < new_width and 0 <= relative_y < new_height):
-        # Get the pixel color at the point
-        try:
-            pixel_color = map_surface.get_at((relative_x, relative_y))
-            # Check if the pixel is black (wall)
-            return pixel_color == (0, 0, 0, 255)
-        except Exception as e:
-            print(f"Error checking pixel: {e}")
-            return False
-
-    return False
+ 
+    try:
+        pixel_color = map_surface.get_at((relative_x, relative_y))
+        # Check if the pixel is black (wall)
+        return pixel_color == (0, 0, 0, 255)
+    except Exception:
+        return True  # Treat any out-of-bounds as collision
 
 def check_line_collision(start_point, end_point, map_surface, new_width, new_height, width, height, steps=20):
     # Check multiple points along the line for collision
@@ -136,12 +147,19 @@ class Slider:
 class RobotArm:
     def __init__(self):
         self.joint_angles = [0, 0, 0]
+        self.previous_safe_angles = [0, 0, 0]
         self.sliders = [Slider(slider_x, slider_y_start + i * slider_spacing, slider_width, slider_height) for i in range(3)]
         self.font = pygame.font.SysFont('Arial', 18)
         self.collision_detected = False
         self.collision_points = []  # Store collision points
         self.collision_links = []   # Store links with collisions
-    
+        
+        self.map_surface = None
+        self.new_width = 0
+        self.new_height = 0
+        self.screen_width = 0
+        self.screen_height = 0
+        
     def check_arm_collision(self, map_surface, new_width, new_height, width, height):
         # Reset collision tracking
         self.collision_points = []
@@ -152,7 +170,8 @@ class RobotArm:
         
         # Check each joint for collision
         for i, joint in enumerate(joints[:-1]):  # Exclude end effector
-            if check_wall_collision(joint, map_surface, new_width, new_height, width, height):
+            if (not is_point_inside_map(joint, map_surface, new_width, new_height, width, height)or
+                check_wall_collision(joint, map_surface, new_width, new_height, width, height)):
                 self.collision_points.append((joint, i))
         
         # Check each link for collision
@@ -163,10 +182,45 @@ class RobotArm:
         # Return True if any collision detected
         return len(self.collision_points) > 0 or len(self.collision_links) > 0  
     
+    def check_link_inside_map(self, start_point, end_point, map_surface, new_width, new_height, width, height, steps=20):
+        # Check multiple points along the line
+        for i in range(steps + 1):
+            t = i / steps
+            x = start_point[0] + t * (end_point[0] - start_point[0])
+            y = start_point[1] + t * (end_point[1] - start_point[1])
+            
+            # Check if point is outside map or hits a wall
+            if (not is_point_inside_map((x, y), map_surface, new_width, new_height, width, height) or 
+                check_wall_collision((x, y), map_surface, new_width, new_height, width, height)):
+                return True
+        return False
+    
     def update_from_slider(self):
         for i, slider in enumerate(self.sliders):
             self.joint_angles[i] = slider.value
-
+            
+        if (self.map_surface and self.check_arm_collision(self.map_surface, self.new_width, self.new_height, self.screen_width, self.screen_height)):
+            # Revert to previous safe angles
+            self.joint_angles = self.previous_safe_angles.copy()
+            
+            # Update sliders to match safe angles
+            for i, angle in enumerate(self.joint_angles):
+                self.sliders[i].value = angle
+            
+            return False  # Collision detected, movement prevented
+        
+        # Update previous safe angles
+        self.previous_safe_angles = self.joint_angles.copy()
+        return True
+    
+    def set_map_parameters(self, map_surface, new_width, new_height, screen_width, screen_height):
+        # Method to set map parameters
+        self.map_surface = map_surface
+        self.new_width = new_width
+        self.new_height = new_height
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        
     def get_joint_positions(self):
         joints = [origin]
         current_angle = 0
@@ -280,16 +334,17 @@ def main():
     clock = pygame.time.Clock()
     robot = RobotArm()
     running = True
+    robot.set_map_parameters(map_surface, new_width, new_height, width, height)
     
     while running:
         screen.fill(white)
         screen.blit(map_surface, ((width - new_width) // 2, (height - new_height) // 2))
         draw_map_border(screen, map_surface, width, height, new_width, new_height)
-        
         robot.draw(screen)
         robot.draw_sliders(screen)
         pygame.display.flip()
         clock.tick(FPS)
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -306,8 +361,6 @@ def main():
                 for slider in robot.sliders:
                     if slider.update(event.pos[0]):
                         robot.update_from_slider()
-        robot.update_from_slider()
-
 
     pygame.quit()
 
