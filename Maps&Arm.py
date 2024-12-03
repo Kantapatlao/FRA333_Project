@@ -14,7 +14,7 @@ pygame.init()
 width, height = 1280, 720
 FPS = 60
 
-map_file_path = os.path.join(os.path.abspath("Map"), 'map1.npy')
+map_file_path = os.path.join(os.path.abspath("Map"), 'map2.npy')
 
 # โหลดข้อมูล numpy array จากไฟล์
 map_array = np.load(map_file_path)
@@ -38,6 +38,7 @@ rgb_map = cv2.cvtColor(inv_resized_map, cv2.COLOR_GRAY2RGB)
 
 # save ภาพเป็น file on memory
 map_file = io.BytesIO(cv2.imencode(".png", inv_resized_map)[1])
+
 map_surface = pygame.image.frombuffer(rgb_map.tobytes(), (new_width, new_height), 'RGB')
 
 # Colors Pallet
@@ -63,9 +64,6 @@ display = pygame.display.set_mode((1280, 720))
 bg = pygame.image.load(map_file, "foo.png")
 node_map = Map(map_array)
 
-def is_within_map_borders(point, map_rect):
-    return map_rect.collidepoint(point)
-
 def generate_random_target(map_surface, new_width, new_height, width, height):
     map_x = (width - new_width) // 2
     map_y = (height - new_height) // 2
@@ -76,11 +74,7 @@ def generate_random_target(map_surface, new_width, new_height, width, height):
         if not check_wall_collision((rand_x, rand_y), map_surface, new_width, new_height, width, height):
             return rand_x, rand_y
 
-def inverse_kinematics(target, origin, link_lengths, map_rect):
-    
-    if not is_within_map_borders(target, map_rect):
-        return  None
-    
+def inverse_kinematics(target, origin, link_lengths):
     x, y = target[0] - origin[0], -(target[1] - origin[1])  # Adjust for screen coordinates
     d = math.sqrt(x**2 + y**2)
 
@@ -145,36 +139,9 @@ def check_line_collision(start_point, end_point, map_surface, new_width, new_hei
             return True
     return False
 
-class Slider:
-    def __init__(self, x, y, width, height, min_val=-math.pi, max_val=math.pi):
-        self.x, self.y = x, y
-        self.width, self.height = width, height
-        self.min_val, self.max_val = min_val, max_val
-        self.handle_radius = slider_handle_radius
-        self.value = 0
-        self.selected = False
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, gray, (self.x, self.y, self.width, self.height))
-        handle_x = self.x + (self.value - self.min_val) / (self.max_val - self.min_val) * self.width
-        pygame.draw.circle(screen, light_gray, (int(handle_x), self.y + self.height // 2), self.handle_radius)
-
-    def is_handle_clicked(self, pos):
-        handle_x = self.x + (self.value - self.min_val) / (self.max_val - self.min_val) * self.width
-        handle_y = self.y + self.height // 2
-        return math.dist((handle_x, handle_y), pos) < self.handle_radius
-
-    def update(self, mouse_x):
-        if self.selected:
-            normalized_x = max(self.x, min(mouse_x, self.x + self.width))
-            self.value = self.min_val + (normalized_x - self.x) / self.width * (self.max_val - self.min_val)
-            return True
-        return False
-
 class RobotArm:
     def __init__(self):
         self.joint_angles = [0, 0, 0]
-        self.sliders = [Slider(slider_x, slider_y_start + i * slider_spacing, slider_width, slider_height) for i in range(3)]
         self.font = pygame.font.SysFont('Arial', 18)
         self.collision_detected = False
         self.collision_points = []  # Store collision points
@@ -200,10 +167,6 @@ class RobotArm:
         
         # Return True if any collision detected
         return len(self.collision_points) > 0 or len(self.collision_links) > 0  
-    
-    def update_from_slider(self):
-        for i, slider in enumerate(self.sliders):
-            self.joint_angles[i] = slider.value
 
     def get_joint_positions(self):
         joints = [origin]
@@ -217,7 +180,7 @@ class RobotArm:
         return joints
 
     def draw_angle_labels(self, screen):
-        for i, slider in enumerate(self.sliders):
+        for i in enumerate(self.sliders):
             angle_text = f"Joint {i+1}: {self.joint_angles[i]:.2f} rad"
             text_surface = self.font.render(angle_text, True, black)
             screen.blit(text_surface, (slider_x, slider_y_start + i * slider_spacing - 30))
@@ -305,10 +268,6 @@ class RobotArm:
         # Draw origin position
         pygame.draw.line(screen, black, (origin[0] - 10, origin[1]), (origin[0] + 10, origin[1]), 2)
         pygame.draw.line(screen, black, (origin[0], origin[1] - 10), (origin[0], origin[1] + 10), 2)
-        
-    def draw_sliders(self, screen):
-        for slider in self.sliders:
-            slider.draw(screen)
 
 # Main function
 def main():
@@ -320,9 +279,6 @@ def main():
     clock = pygame.time.Clock()
     robot = RobotArm()
     running = True
-    map_x = (width - new_width) // 2
-    map_y = (height - new_height) // 2
-    map_border_rect = pygame.Rect(map_x, map_y, new_width, new_height)
     
     while running:
         screen.fill(white)
@@ -333,38 +289,31 @@ def main():
         
         if not target_reached:
         # Compute joint angles for the target
-            angles = inverse_kinematics(target, origin, Link_Lengths,map_border_rect)
+            angles = inverse_kinematics(target, origin, Link_Lengths)
         
         if angles:
+            angles_in_degrees = [math.degrees(angle) for angle in angles]
+                
+                # Assign the calculated angles to the robot
             robot.joint_angles = angles
-            robot.update_from_slider()
-
-        # Check if end effector has reached the target
-        end_effector = robot.get_joint_positions()[-1]
-        if math.dist(end_effector, target) < 5:
-            target_reached = True
-        
+                
+                # Print the angles in degrees
+            print(f"Joint Angles (degrees): {angles_in_degrees}")
+            pygame.time.delay(1000)
+                # Check if end effector has reached the target
+            end_effector = robot.get_joint_positions()[-1]
+            if math.dist(end_effector, target) < 5:
+                target_reached = True
+                print("Target reached!")
+                
         robot.draw(screen)
-        robot.draw_sliders(screen)
+        
         pygame.display.flip()
         clock.tick(FPS)
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    for slider in robot.sliders:
-                        if slider.is_handle_clicked(event.pos):
-                            slider.selected = True
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:
-                    for slider in robot.sliders:
-                        slider.selected = False
-            elif event.type == pygame.MOUSEMOTION:
-                for slider in robot.sliders:
-                    if slider.update(event.pos[0]):
-                        robot.update_from_slider()
-        robot.update_from_slider()
 
 
     pygame.quit()
