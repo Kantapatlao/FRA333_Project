@@ -167,7 +167,9 @@ class RobotArm:
         self.new_height = 0
         self.screen_width = 0
         self.screen_height = 0
+        self.origin = origin  # Default origin
         
+<<<<<<< Updated upstream
 
     def calculate_joint_positions(self):
         # คำนวณตำแหน่งข้อต่อจากมุมปัจจุบัน
@@ -198,6 +200,22 @@ class RobotArm:
 
             self.paths.append(path)
             current_position = goal  # อัปเดตตำแหน่งปัจจุบันไปยังเป้าหมายนี้
+=======
+    def set_origin_within_bounds(self, map_surface, new_width, new_height, screen_width, screen_height):
+        """
+        ปรับตำแหน่ง origin ให้อยู่ในกรอบของแผนที่
+        """
+        map_x = (screen_width - new_width) // 2
+        map_y = (screen_height - new_height) // 2
+
+        # จำกัดตำแหน่งของ origin ให้อยู่ภายในกรอบ
+        self.origin = (
+            max(map_x, min(self.origin[0], map_x + new_width - 1)),
+            max(map_y, min(self.origin[1], map_y + new_height - 1))
+        )
+        print(f"Updated origin to within bounds: {self.origin}")
+
+>>>>>>> Stashed changes
     def check_arm_collision(self, map_surface, new_width, new_height, width, height):
         # Reset collision tracking
         self.collision_points = []
@@ -208,11 +226,12 @@ class RobotArm:
         
         # Check each joint for collision
         for i, joint in enumerate(joints[:-1]):  # Exclude end effector
-            if (not is_point_inside_map(joint, map_surface, new_width, new_height, width, height)or
+            if (not is_point_inside_map(joint, map_surface, new_width, new_height, width, height) or
                 check_wall_collision(joint, map_surface, new_width, new_height, width, height)):
                 self.collision_points.append((joint, i))
                 return True
         # Check each link for collision
+<<<<<<< Updated upstream
         # for i in range(len(joints) - 1):
         #     if check_line_collision(joints[i], joints[i+1], map_surface, new_width, new_height, width, height):
         #         self.collision_links.append((joints[i], joints[i+1], i))
@@ -250,18 +269,30 @@ class RobotArm:
 
         self.joint_angles = updated_angles
     
+=======
+        for i in range(len(joints) - 1):
+            if check_line_collision(joints[i], joints[i + 1], map_surface, new_width, new_height, width, height):
+                self.collision_links.append((joints[i], joints[i + 1], i))
+        
+        # Return True if any collision detected
+        return len(self.collision_points) > 0 or len(self.collision_links) > 0  
+
+>>>>>>> Stashed changes
     def set_map_parameters(self, map_surface, new_width, new_height, screen_width, screen_height):
-        # Method to set map parameters
+        """
+        Method to set map parameters and update origin within bounds
+        """
         self.map_surface = map_surface
         self.new_width = new_width
         self.new_height = new_height
         self.screen_width = screen_width
         self.screen_height = screen_height
-        
+        self.set_origin_within_bounds(map_surface, new_width, new_height, screen_width, screen_height)
+
     def get_joint_positions(self):
-        joints = [origin]
+        joints = [self.origin]
         current_angle = 0
-        x, y = origin
+        x, y = self.origin
         for i, length in enumerate(Link_Lengths):
             current_angle += self.joint_angles[i]
             x += length * math.cos(current_angle)
@@ -269,6 +300,7 @@ class RobotArm:
             joints.append((x, y))
         return joints
 
+<<<<<<< Updated upstream
     def draw_angle_labels(self, screen):
         for i, slider in enumerate(self.sliders):
             angle_text = f"Joint {i+1}: {self.joint_angles[i]:.2f} rad"
@@ -293,6 +325,9 @@ class RobotArm:
     def draw_sliders(self, screen):
         for slider in self.sliders:
             slider.draw(screen)
+=======
+    # Other methods remain unchanged...
+>>>>>>> Stashed changes
 
 # Main function
 def main():
@@ -322,6 +357,10 @@ def main():
         pygame.display.flip()
         clock.tick(FPS)
 
+<<<<<<< Updated upstream
+=======
+        # Event handling
+>>>>>>> Stashed changes
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
