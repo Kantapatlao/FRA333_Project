@@ -16,7 +16,7 @@ width, height = 1280, 720
 FPS = 60
 
 # Load map
-map_file_path = os.path.join(os.path.abspath("Map"), 'map5.npy')
+map_file_path = os.path.join(os.path.abspath("Map"), 'map2.npy')
 map_array = np.load(map_file_path).astype(np.uint8)
 
 # Map processing
@@ -191,6 +191,14 @@ def interpolate_angles(current_angles, target_angles, step_size=0.1):
     
     return new_angles
 
+def generate_linear_path(start, end, num_points=10):
+    """Generate a linear path between start and end points"""
+    path = []
+    for i in range(num_points + 1):
+        fraction = i / num_points
+        path.append(interpolate_point(start, end, fraction))
+    return path
+
 class RobotArm:
     def __init__(self):
         self.joint_angles = [0, 0, 0]
@@ -234,7 +242,9 @@ def main():
     # Initial target and path
     current_target = generate_random_target(astar)
     end_effector = robot.get_joint_positions()[-1]
-    path = astar.find_path(end_effector, current_target)
+    
+    # Generate linear path instead of A* path
+    path = generate_linear_path(end_effector, current_target)
     path_index = 0
 
     while running:
@@ -248,7 +258,7 @@ def main():
         # Draw current path
         if path:
             for i in range(len(path) - 1):
-                pygame.draw.line(screen, yellow, path[i], path[i+1], 2)
+                pygame.draw.line(screen, blue, path[i], path[i+1], 2)
         
         # Draw current target
         pygame.draw.circle(screen, red, current_target, 5)
@@ -256,7 +266,7 @@ def main():
         # Get current end effector position
         end_effector = robot.get_joint_positions()[-1]
         
-        # Check if we need a new path
+        # Check if we need to move to next waypoint
         if path and path_index < len(path):
             next_waypoint = path[path_index]
             
