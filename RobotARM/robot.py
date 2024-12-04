@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import pygame
 
 # Declare Robot arm object
 class RobotArm:
@@ -14,15 +15,9 @@ class RobotArm:
 
 
     # Initialized Robot arm object
-    def __init__(self, baseX, baseY, link_len) -> None:
+    def __init__(self, link_len) -> None:
 
-        # Check if baseX and baseY type
-        if type(baseX) is not int:
-            raise TypeError("baseX only take int (integer) as input.")
-        
-        if type(baseY) is not int:
-            raise TypeError("baseY only take int (integer) as input.")
-        
+        # Check type of lin_len   
         if type(link_len) is not list:
             raise TypeError("link_len only take list of int (integer) as input.")
         
@@ -34,7 +29,7 @@ class RobotArm:
                 raise ValueError(f'{i} element of link_len can not be negative value.')
         
 
-        self.base_position = (baseX, baseY)
+        
         self.links = [self._joint(l) for l in link_len]
 
 
@@ -62,8 +57,8 @@ class RobotArm:
         # Calculate each joint
         self.links[0].angle = joint[0]
         j_buf = self.links[0].angle
-        self.links[0].end_positionX = self.base_position[0] + (math.cos(j_buf) * self.links[0].LENGTH)
-        self.links[0].end_positionY = self.base_position[1] + (math.sin(j_buf) * self.links[0].LENGTH)
+        self.links[0].end_positionX = math.cos(j_buf) * self.links[0].LENGTH
+        self.links[0].end_positionY = math.sin(j_buf) * self.links[0].LENGTH
         
         for i in range(1,len(joint)):
 
@@ -85,11 +80,39 @@ class RobotArm:
 
 
     # TODO: Calculate inverse kinematic (Newton-Raphson's method)
+    
+
+
 
 
     # Draw Robot
+    def draw_robot(self, pygame_screen, base_x, base_y, y_max):
 
+        # Check input type
+        if type(base_x) is not int:
+            raise TypeError("base_x only take integer as input.")
+        
+        if type(base_y) is not int:
+            raise TypeError("base_y only take integer as input.")
+        
+        if type(y_max) is not int:
+            raise TypeError("y_max only take integer as input.")
+        
 
+        pygame.draw.line(pygame_screen, 
+                        (0,255,0),
+                        (base_x, base_y),
+                        (self.links[0].end_positionX + base_x, base_y - self.links[0].end_positionY),
+                        width=5
+                        )
+
+        for i,link in enumerate(self.links):
+            pygame.draw.line(pygame_screen,
+                            (0,255,0), 
+                            (self.links[i-1].end_positionX + base_x, base_y - self.links[i-1].end_positionY),
+                            (self.links[i].end_positionX + base_x, base_y - self.links[i].end_positionY),
+                            width=5
+                            )
     
 
 
