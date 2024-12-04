@@ -77,24 +77,50 @@ def generate_random_target(map_surface, new_width, new_height, width, height):
 def inverse_kinematics(target, origin, link_lengths):
     x, y = target[0] - origin[0], -(target[1] - origin[1])  # Adjust for screen coordinates
     d = math.sqrt(x**2 + y**2)
-
-    if d > sum(link_lengths):
+    
+    max_reach = sum(link_lengths)
+    min_reach = abs(link_lengths[0] - link_lengths[1])
+    
+    if d > max_reach or d < min_reach:
         return None  # Target out of reach
 
     # Law of Cosines to find angles
     angle1 = math.atan2(y, x)
-    cos_angle2 = (link_lengths[0]**2 + d**2 - link_lengths[1]**2) / (2 * link_lengths[0] * d)
-    angle2 = math.acos(min(max(cos_angle2, -1), 1))
+    
+    # Use law of cosines to compute joint angles
+    cos_theta = (link_lengths[0]**2 + d**2 - link_lengths[1]**2) / (2 * link_lengths[0] * d)
+    cos_theta = max(min(cos_theta, 1), -1)  # Ensure value is within [-1, 1]
+    
+    angle2 = angle1 + math.acos(cos_theta)
+    
+    # Compute third joint angle
+    cos_theta2 = (link_lengths[0]**2 + link_lengths[1]**2 - d**2) / (2 * link_lengths[0] * link_lengths[1])
+    cos_theta2 = max(min(cos_theta2, 1), -1)  # Ensure value is within [-1, 1]
+    
+    angle3 = math.pi - math.acos(cos_theta2)
 
-    cos_angle3 = (link_lengths[0]**2 + link_lengths[1]**2 - d**2) / (2 * link_lengths[0] * link_lengths[1])
-    angle3 = math.acos(min(max(cos_angle3, -1), 1))
+    return [angle1, angle2, angle3]
 
-    joint_angles = [
-        angle1 + angle2,
-        math.pi - angle3,
-        0  # Third joint angle is not used for planar 2-link arm
-    ]
-    return joint_angles
+def interpolate_angles(current_angles, target_angles, step_size=0.1):
+    """
+    Interpolate between current and target angles with a small step
+    """
+    new_angles = []
+    for current, target in zip(current_angles, target_angles):
+        # Calculate the shortest angle difference
+        diff = target - current
+        # Normalize the difference to the range [-pi, pi]
+        diff = (diff + math.pi) % (2 * math.pi) - math.pi
+        
+        # Move towards the target by step_size
+        if abs(diff) > step_size:
+            new_angle = current + (step_size if diff > 0 else -step_size)
+        else:
+            new_angle = target
+        
+        new_angles.append(new_angle)
+    
+    return new_angles
 
 def draw_map_border(screen, map_surface, width, height, new_width, new_height):
     # Calculate the position of the map on the screen
@@ -272,12 +298,13 @@ class RobotArm:
 # Main function
 def main():
     target = generate_random_target(map_surface, new_width, new_height, width, height)
-    target_reached = False
     screen = pygame.display.set_mode((width, height))
     screen.fill(white)
     screen.blit(bg, (0, 0))
     clock = pygame.time.Clock()
     robot = RobotArm()
+    running = True
+    current_angles = [0, 0, 0]
     running = True
     
     while running:
@@ -287,25 +314,35 @@ def main():
         
         pygame.draw.circle(screen, red, target, 5)
         
-        if not target_reached:
-        # Compute joint angles for the target
-            angles = inverse_kinematics(target, origin, Link_Lengths)
+        # Compute target angles
+        target_angles = inverse_kinematics(target, origin, Link_Lengths)
         
-        if angles:
-            angles_in_degrees = [math.degrees(angle) for angle in angles]
-                
-                # Assign the calculated angles to the robot
-            robot.joint_angles = angles
-                
-                # Print the angles in degrees
-            print(f"Joint Angles (degrees): {angles_in_degrees}")
-            pygame.time.delay(1000)
-                # Check if end effector has reached the target
+        if target_angles is not None:
+            # Interpolate angles incrementally
+            current_angles = interpolate_angles(current_angles, target_angles)
+            
+            # Assign interpolated angles to the robot
+            robot.joint_angles = current_angles
+            
+            # Check if end effector has reached the target
             end_effector = robot.get_joint_positions()[-1]
-            if math.dist(end_effector, target) < 5:
-                target_reached = True
+            distance_to_target = math.dist(end_effector, target)
+            
+            # Print debug information
+            print(f"Distance to target: {distance_to_target}")
+            print(f"Current Angles: {[math.degrees(angle) for angle in current_angles]}")
+            
+            if distance_to_target < 10:  # Reached target
                 print("Target reached!")
-                
+                pygame.time.delay(1000)  # Pause
+                # Generate a new random target
+                target = generate_random_target(map_surface, new_width, new_height, width, height)
+        else:
+            # If target is unreachable, display a message
+            font = pygame.font.SysFont('Arial', 24)
+            text = font.render("Target Unreachable!", True, red)
+            screen.blit(text, (width // 2 - 100, height - 50))
+        
         robot.draw(screen)
         
         pygame.display.flip()
@@ -314,7 +351,6 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
 
     pygame.quit()
 
