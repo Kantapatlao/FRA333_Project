@@ -4,7 +4,6 @@ import io
 import numpy as np
 import cv2
 import pygame
-import random
 from pygame.locals import *
 from Path_Finding.map_optimizer import Map
 
@@ -27,7 +26,6 @@ resized_map = cv2.resize(map_array, (new_width, new_height), interpolation=cv2.I
 # กลับสีภาพ
 inv_resized_map = np.ones((new_height, new_width), dtype=np.uint8) * 255
 inv_resized_map[resized_map == 1] = 0
-
 
 # save ภาพเป็น file on memory
 map_file = io.BytesIO(cv2.imencode(".png", inv_resized_map)[1])

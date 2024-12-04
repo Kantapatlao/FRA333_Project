@@ -5,8 +5,9 @@ import numpy as np
 import cv2
 import pygame
 import random
+import heapq
 from pygame.locals import *
-from Path_Finding.map_optimizer import Map
+from typing import List, Tuple, Optional
 
 pygame.init()
 
@@ -14,105 +15,173 @@ pygame.init()
 width, height = 1280, 720
 FPS = 60
 
-map_file_path = os.path.join(os.path.abspath("Map"), 'map2.npy')
+# Load map
+map_file_path = os.path.join(os.path.abspath("Map"), 'map5.npy')
+map_array = np.load(map_file_path).astype(np.uint8)
 
-# โหลดข้อมูล numpy array จากไฟล์
-map_array = np.load(map_file_path)
-map_array = map_array.astype(np.uint8)
-
-# ตรวจสอบขนาดของ map_array
+# Map processing
 map_height, map_width = map_array.shape
-
-# คำนวณสเกลเพื่อให้ภาพใหญ่สุด 500 พิกเซล
-scale = 500 / max(map_width, map_height)  # อัตราส่วนสำหรับขยาย
+scale = 500 / max(map_width, map_height)
 new_width = int(map_width * scale)
 new_height = int(map_height * scale)
 
-# ปรับขนาดภาพ
+# Resize and convert map
 resized_map = cv2.resize(map_array, (new_width, new_height), interpolation=cv2.INTER_NEAREST)
-
-# กลับสีภาพ
 inv_resized_map = np.ones((new_height, new_width), dtype=np.uint8) * 255
 inv_resized_map[resized_map == 1] = 0
 rgb_map = cv2.cvtColor(inv_resized_map, cv2.COLOR_GRAY2RGB)
 
-# save ภาพเป็น file on memory
+# Prepare map surface
 map_file = io.BytesIO(cv2.imencode(".png", inv_resized_map)[1])
-
 map_surface = pygame.image.frombuffer(rgb_map.tobytes(), (new_width, new_height), 'RGB')
 
-# Colors Pallet
+# Colors
 white = (255, 255, 255)
 black = (0, 0, 0)
 red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
-gray = (128, 128, 128)
-light_gray = (228, 228, 228)
+yellow = (255, 255, 0)
 
 # Robot arm parameters
 Link_Lengths = [167, 167, 167]
-origin = (((width - new_width) // 2), ((height + new_height) // 2))
+map_x = (width - new_width) // 2
+map_y = (height - new_height) // 2
+
+# Change origin to bottom left corner of the map
+origin = (map_x, map_y + new_height)
 joint_radius = 5
 
-# Slider settings
-slider_width, slider_height = 300, 10
-slider_x, slider_y_start, slider_spacing = 950, 50, 60
-slider_handle_radius = 10
+class AStar:
+    def __init__(self, map_surface, map_x, map_y, new_width, new_height):
+        self.map_surface = map_surface
+        self.map_x = map_x
+        self.map_y = map_y
+        self.new_width = new_width
+        self.new_height = new_height
 
-display = pygame.display.set_mode((1280, 720))
-bg = pygame.image.load(map_file, "foo.png")
-node_map = Map(map_array)
+    def heuristic(self, a: Tuple[int, int], b: Tuple[int, int]) -> float:
+        """Manhattan distance heuristic"""
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-def generate_random_target(map_surface, new_width, new_height, width, height):
-    map_x = (width - new_width) // 2
-    map_y = (height - new_height) // 2
-    
+    def get_neighbors(self, node: Tuple[int, int]) -> List[Tuple[int, int]]:
+        """Get valid neighboring nodes"""
+        neighbors = [
+            (node[0]+1, node[1]), (node[0]-1, node[1]),
+            (node[0], node[1]+1), (node[0], node[1]-1),
+            (node[0]+1, node[1]+1), (node[0]-1, node[1]-1),
+            (node[0]+1, node[1]-1), (node[0]-1, node[1]+1)
+        ]
+        
+        # Filter out wall collisions and out-of-bounds nodes
+        return [
+            n for n in neighbors 
+            if not self.check_wall_collision(n, self.map_surface, self.new_width, self.new_height, width, height)
+        ]
+
+    def check_wall_collision(self, point, map_surface, new_width, new_height, width, height):
+        map_x = (width - new_width) // 2
+        map_y = (height - new_height) // 2
+
+        relative_x = int(point[0] - map_x)
+        relative_y = int(point[1] - map_y)
+
+        if (0 <= relative_x < new_width and 0 <= relative_y < new_height):
+            try:
+                pixel_color = map_surface.get_at((relative_x, relative_y))
+                return pixel_color == (0, 0, 0, 255)
+            except Exception:
+                return True
+
+        return True
+
+    def reconstruct_path(self, came_from, current):
+        """Reconstruct the path from start to goal"""
+        path = [current]
+        while current in came_from:
+            current = came_from[current]
+            path.append(current)
+        path.reverse()
+        return path
+
+    def find_path(self, start: Tuple[int, int], goal: Tuple[int, int]) -> Optional[List[Tuple[int, int]]]:
+        """A* path finding algorithm"""
+        start = (int(start[0]), int(start[1]))
+        goal = (int(goal[0]), int(goal[1]))
+
+        # Boundary checks
+        if self.check_wall_collision(start, self.map_surface, self.new_width, self.new_height, width, height) or \
+           self.check_wall_collision(goal, self.map_surface, self.new_width, self.new_height, width, height):
+            return None
+
+        open_set = []
+        heapq.heappush(open_set, (0, start))
+        
+        came_from = {}
+        g_score = {start: 0}
+        f_score = {start: self.heuristic(start, goal)}
+
+        while open_set:
+            current_f, current = heapq.heappop(open_set)
+
+            if current == goal:
+                return self.reconstruct_path(came_from, current)
+
+            for neighbor in self.get_neighbors(current):
+                tentative_g_score = g_score[current] + 1
+
+                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal)
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+        return None  # No path found
+
+def generate_random_target(astar):
     while True:
-        rand_x = random.randint(map_x, map_x + new_width - 1)
-        rand_y = random.randint(map_y, map_y + new_height - 1)
-        if not check_wall_collision((rand_x, rand_y), map_surface, new_width, new_height, width, height):
+        rand_x = random.randint(astar.map_x, astar.map_x + astar.new_width - 1)
+        rand_y = random.randint(astar.map_y, astar.map_y + astar.new_height - 1)
+        
+        if not astar.check_wall_collision((rand_x, rand_y), astar.map_surface, astar.new_width, astar.new_height, width, height):
             return rand_x, rand_y
 
+def interpolate_point(start, end, fraction):
+    return (
+        start[0] + (end[0] - start[0]) * fraction, 
+        start[1] + (end[1] - start[1]) * fraction
+    )
+
 def inverse_kinematics(target, origin, link_lengths):
-    x, y = target[0] - origin[0], -(target[1] - origin[1])  # Adjust for screen coordinates
+    x, y = target[0] - origin[0], -(target[1] - origin[1])
     d = math.sqrt(x**2 + y**2)
-    
+
     max_reach = sum(link_lengths)
     min_reach = abs(link_lengths[0] - link_lengths[1])
-    
-    if d > max_reach or d < min_reach:
-        return None  # Target out of reach
 
-    # Law of Cosines to find angles
+    if d > max_reach or d < min_reach:
+        return None
+
     angle1 = math.atan2(y, x)
     
-    # Use law of cosines to compute joint angles
     cos_theta = (link_lengths[0]**2 + d**2 - link_lengths[1]**2) / (2 * link_lengths[0] * d)
-    cos_theta = max(min(cos_theta, 1), -1)  # Ensure value is within [-1, 1]
+    cos_theta = max(min(cos_theta, 1), -1)
     
     angle2 = angle1 + math.acos(cos_theta)
     
-    # Compute third joint angle
     cos_theta2 = (link_lengths[0]**2 + link_lengths[1]**2 - d**2) / (2 * link_lengths[0] * link_lengths[1])
-    cos_theta2 = max(min(cos_theta2, 1), -1)  # Ensure value is within [-1, 1]
+    cos_theta2 = max(min(cos_theta2, 1), -1)
     
     angle3 = math.pi - math.acos(cos_theta2)
 
     return [angle1, angle2, angle3]
 
 def interpolate_angles(current_angles, target_angles, step_size=0.1):
-    """
-    Interpolate between current and target angles with a small step
-    """
     new_angles = []
     for current, target in zip(current_angles, target_angles):
-        # Calculate the shortest angle difference
         diff = target - current
-        # Normalize the difference to the range [-pi, pi]
         diff = (diff + math.pi) % (2 * math.pi) - math.pi
         
-        # Move towards the target by step_size
         if abs(diff) > step_size:
             new_angle = current + (step_size if diff > 0 else -step_size)
         else:
@@ -122,78 +191,10 @@ def interpolate_angles(current_angles, target_angles, step_size=0.1):
     
     return new_angles
 
-def draw_map_border(screen, map_surface, width, height, new_width, new_height):
-    # Calculate the position of the map on the screen
-    map_x = (width - new_width) // 2
-    map_y = (height - new_height) // 2
-    
-    # Draw border lines
-    pygame.draw.rect(screen, black, 
-        (map_x, map_y, new_width, new_height), 2  # Line thickness of 2 pixels
-    )
-
-def check_wall_collision(point, map_surface, new_width, new_height, width, height):
-    # Calculate the map's position on the screen
-    map_x = (width - new_width) // 2
-    map_y = (height - new_height) // 2
-
-    # Convert end effector screen coordinates to map surface coordinates
-    relative_x = int(point[0] - map_x)
-    relative_y = int(point[1] - map_y)
-
-    # Check if the point is within the map surface boundaries
-    if (0 <= relative_x < new_width and 0 <= relative_y < new_height):
-        # Get the pixel color at the point
-        try:
-            pixel_color = map_surface.get_at((relative_x, relative_y))
-            # Check if the pixel is black (wall)
-            return pixel_color == (0, 0, 0, 255)
-        except Exception as e:
-            print(f"Error checking pixel: {e}")
-            return False
-
-    return False
-
-def check_line_collision(start_point, end_point, map_surface, new_width, new_height, width, height, steps=20):
-    # Check multiple points along the line for collision
-    for i in range(steps + 1):
-        t = i / steps
-        x = start_point[0] + t * (end_point[0] - start_point[0])
-        y = start_point[1] + t * (end_point[1] - start_point[1])
-        
-        if check_wall_collision((x, y), map_surface, new_width, new_height, width, height):
-            return True
-    return False
-
 class RobotArm:
     def __init__(self):
         self.joint_angles = [0, 0, 0]
-        self.font = pygame.font.SysFont('Arial', 18)
-        self.collision_detected = False
-        self.collision_points = []  # Store collision points
-        self.collision_links = []   # Store links with collisions
     
-    def check_arm_collision(self, map_surface, new_width, new_height, width, height):
-        # Reset collision tracking
-        self.collision_points = []
-        self.collision_links = []
-        
-        # Get all joint positions
-        joints = self.get_joint_positions()
-        
-        # Check each joint for collision
-        for i, joint in enumerate(joints[:-1]):  # Exclude end effector
-            if check_wall_collision(joint, map_surface, new_width, new_height, width, height):
-                self.collision_points.append((joint, i))
-        
-        # Check each link for collision
-        for i in range(len(joints) - 1):
-            if check_line_collision(joints[i], joints[i+1], map_surface, new_width, new_height, width, height):
-                self.collision_links.append((joints[i], joints[i+1], i))
-        
-        # Return True if any collision detected
-        return len(self.collision_points) > 0 or len(self.collision_links) > 0  
-
     def get_joint_positions(self):
         joints = [origin]
         current_angle = 0
@@ -205,152 +206,78 @@ class RobotArm:
             joints.append((x, y))
         return joints
 
-    def draw_angle_labels(self, screen):
-        for i in enumerate(self.sliders):
-            angle_text = f"Joint {i+1}: {self.joint_angles[i]:.2f} rad"
-            text_surface = self.font.render(angle_text, True, black)
-            screen.blit(text_surface, (slider_x, slider_y_start + i * slider_spacing - 30))
-
     def draw(self, screen):
         joints = self.get_joint_positions()
         
-        collision_detected = self.check_arm_collision(
-            map_surface,  # Pygame surface of the map
-            new_width,    # Width of the resized map
-            new_height,   # Height of the resized map
-            width,        # Total screen width
-            height        # Total screen height
-        )
+        # Draw links
         for i in range(len(joints) - 1):
-            # Check if this link is in collision
-            link_color = red if any(l[0] == joints[i] and l[1] == joints[i+1] for l in self.collision_links) else black
-            pygame.draw.line(screen, link_color, joints[i], joints[i + 1], 6 if link_color == red else 4)
+            pygame.draw.line(screen, black, joints[i], joints[i + 1], 4)
         
-        for i, joint in enumerate(joints[:-1]):
-            # Check if this joint is in collision
-            joint_color = red if any(p[0] == joint for p in self.collision_points) else blue
-            pygame.draw.circle(screen, joint_color, (int(joint[0]), int(joint[1])), joint_radius)
-        
-        end_effector_color = red if collision_detected else green
-        pygame.draw.circle(screen, end_effector_color, 
-                           (int(joints[-1][0]), int(joints[-1][1])), 5)
-        
+        # Draw joints
         for joint in joints[:-1]:
             pygame.draw.circle(screen, blue, (int(joint[0]), int(joint[1])), joint_radius)
-            end_effector_color = red if self.collision_detected else green
-            pygame.draw.circle(screen, end_effector_color, (int(joints[-1][0]), int(joints[-1][1])), 5)
-            
-        if collision_detected:
-            warning_font = pygame.font.SysFont('Arial', 24)
-            warning_text = warning_font.render("WALL COLLISION!", True, red)
-            screen.blit(warning_text, (20, height - 50))
-            
-        debug_font = pygame.font.SysFont('Arial', 18)
-        if self.collision_points:
-            for point, joint_index in self.collision_points:
-                debug_text = debug_font.render(
-                    f"Collision at Joint {joint_index}", 
-                    True, red
-                )
-                screen.blit(debug_text, (20, height - 100 - joint_index * 30))
-                
-        if self.collision_links:
-            for start, end, link_index in self.collision_links:
-                debug_text = debug_font.render(
-                    f"Collision on Link {link_index}", 
-                    True, red
-                )
-                screen.blit(debug_text, (20, height - 200 - link_index * 30))
-
-        # Box position info
-        info_box_x = 20
-        info_box_y = 400
-        line_height = 30
         
-        # Background rectangle for position info
-        info_width = 180
-        info_height = (len(joints) + 1) * line_height + 10
-        pygame.draw.rect(screen, (40, 40, 40), 
-                        (info_box_x - 10, info_box_y - 10,info_width, info_height))
-        # Draw joint positions
-        for i, pos in enumerate(joints[:-1]):  # All joints except end effector
-            # Convert coordinates to be relative to origin
-            rel_x = pos[0] - origin[0]
-            rel_y = -(pos[1] - origin[1])  
-            
-            text = f"Joint {i}: ({rel_x:.1f}, {rel_y:.1f})"
-            text_surface = self.font.render(text, True, light_gray)
-            screen.blit(text_surface, (info_box_x, info_box_y + i * line_height))
+        # Draw end effector
+        pygame.draw.circle(screen, green, (int(joints[-1][0]), int(joints[-1][1])), 5)
 
-        # Draw end effector position
-        end_pos = joints[-1]
-        rel_x = end_pos[0] - origin[0]
-        rel_y = -(end_pos[1] - origin[1])  
-        
-        ee_text = f"End Effector: ({rel_x:.1f}, {rel_y:.1f})"
-        text_surface = self.font.render(ee_text, True, green)
-        screen.blit(text_surface, (info_box_x, info_box_y + len(joints) * line_height))
-
-        # Draw origin position
-        pygame.draw.line(screen, black, (origin[0] - 10, origin[1]), (origin[0] + 10, origin[1]), 2)
-        pygame.draw.line(screen, black, (origin[0], origin[1] - 10), (origin[0], origin[1] + 10), 2)
-
-# Main function
 def main():
-    target = generate_random_target(map_surface, new_width, new_height, width, height)
     screen = pygame.display.set_mode((width, height))
-    screen.fill(white)
-    screen.blit(bg, (0, 0))
     clock = pygame.time.Clock()
     robot = RobotArm()
-    running = True
+    
+    # Create A* path finder
+    astar = AStar(map_surface, map_x, map_y, new_width, new_height)
+    
     current_angles = [0, 0, 0]
     running = True
     
+    # Initial target and path
+    current_target = generate_random_target(astar)
+    end_effector = robot.get_joint_positions()[-1]
+    path = astar.find_path(end_effector, current_target)
+    path_index = 0
+
     while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        
         screen.fill(white)
         screen.blit(map_surface, ((width - new_width) // 2, (height - new_height) // 2))
-        draw_map_border(screen, map_surface, width, height, new_width, new_height)
         
-        pygame.draw.circle(screen, red, target, 5)
+        # Draw current path
+        if path:
+            for i in range(len(path) - 1):
+                pygame.draw.line(screen, yellow, path[i], path[i+1], 2)
         
-        # Compute target angles
-        target_angles = inverse_kinematics(target, origin, Link_Lengths)
+        # Draw current target
+        pygame.draw.circle(screen, red, current_target, 5)
         
-        if target_angles is not None:
-            # Interpolate angles incrementally
-            current_angles = interpolate_angles(current_angles, target_angles)
-            
-            # Assign interpolated angles to the robot
-            robot.joint_angles = current_angles
-            
-            # Check if end effector has reached the target
-            end_effector = robot.get_joint_positions()[-1]
-            distance_to_target = math.dist(end_effector, target)
-            
-            # Print debug information
-            print(f"Distance to target: {distance_to_target}")
-            print(f"Current Angles: {[math.degrees(angle) for angle in current_angles]}")
-            
-            if distance_to_target < 10:  # Reached target
-                print("Target reached!")
-                pygame.time.delay(1000)  # Pause
-                # Generate a new random target
-                target = generate_random_target(map_surface, new_width, new_height, width, height)
-        else:
-            # If target is unreachable, display a message
-            font = pygame.font.SysFont('Arial', 24)
-            text = font.render("Target Unreachable!", True, red)
-            screen.blit(text, (width // 2 - 100, height - 50))
+        # Get current end effector position
+        end_effector = robot.get_joint_positions()[-1]
         
+        # Check if we need a new path
+        if path and path_index < len(path):
+            next_waypoint = path[path_index]
+            
+            # Calculate target angles to next waypoint
+            target_angles = inverse_kinematics(next_waypoint, origin, Link_Lengths)
+            
+            if target_angles is not None:
+                # Slower, more deliberate movement
+                current_angles = interpolate_angles(current_angles, target_angles, step_size=0.03)
+                robot.joint_angles = current_angles
+                
+                # Check if we've reached the current waypoint
+                current_end_effector = robot.get_joint_positions()[-1]
+                if math.dist(current_end_effector, next_waypoint) < 10:
+                    path_index += 1
+        
+        # Draw robot arm
         robot.draw(screen)
         
         pygame.display.flip()
         clock.tick(FPS)
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
 
     pygame.quit()
 
