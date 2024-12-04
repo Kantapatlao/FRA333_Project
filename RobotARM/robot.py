@@ -28,8 +28,7 @@ class RobotArm:
             if l < 0:
                 raise ValueError(f'{i} element of link_len can not be negative value.')
         
-
-        
+        self.base_position = None
         self.links = [self._joint(l) for l in link_len]
 
 
@@ -84,7 +83,53 @@ class RobotArm:
 
 
 
+    # Check wall collision
+    def check_wall_collision(self, map_x, map_y, map_size_x, map_size_y):
 
+        # Check input type
+        if type(map_x) is not int:
+            raise TypeError("map_x only take integer as input.")
+
+        # Check input type
+        if type(map_y) is not int:
+            raise TypeError("map_y only take integer as input.")
+
+        # Check input type
+        if type(map_size_x) is not int:
+            raise TypeError("map_size_x only take integer as input.")
+
+        # Check input type
+        if type(map_size_y) is not int:
+            raise TypeError("map_size_y only take integer as input.")
+        
+        # Check if robot have it's base position or not
+        if self.base_position is None:
+            return ValueError("Object's base_position isn't assigned yet. Draw the robot first.")
+        
+        for link in self.links:
+
+            # Check left wall collision
+            if link.end_positionX + self.base_position[0] < map_x:
+                return True
+            
+            # Check right wall collision
+            if link.end_positionX + self.base_position[0] > map_x + map_size_x:
+                return True
+            
+            # Check top wall collision
+            if self.base_position[1] - link.end_positionY < map_y:
+                return True
+            
+            # Check bottom wall collision
+            if self.base_position[1] - link.end_positionY > map_y + map_size_y:
+                return True
+            
+        return False
+    
+    
+    
+    
+    
     # Draw Robot
     def draw_robot(self, pygame_screen, base_x, base_y, y_max):
 
@@ -97,6 +142,8 @@ class RobotArm:
         
         if type(y_max) is not int:
             raise TypeError("y_max only take integer as input.")
+        
+        self.base_position = (base_x, base_y)
         
 
         pygame.draw.line(pygame_screen, 
@@ -113,6 +160,8 @@ class RobotArm:
                             (self.links[i].end_positionX + base_x, base_y - self.links[i].end_positionY),
                             width=5
                             )
+            
+        return None
     
 
 

@@ -24,7 +24,7 @@ def main():
 
     # Initialized Robot arm object
     Robot = RobotArm([180,180,180])
-    Robot.forward_kinematic([3.14/4,3.14/4,0])
+    Robot.forward_kinematic([-3.14,0,0])
 
 
     running = True
@@ -34,6 +34,9 @@ def main():
         screen.fill((255,255,255))
         map2img(screen, np_map, 100, 100)
         Robot.draw_robot(screen, 100, 600, 720)
+
+        if Robot.check_wall_collision(100,100,500,500):
+            pygame.draw.rect(screen, (255,0,0), ((1000,100),(1100,200)))
 
         for event in pygame.event.get():
             
