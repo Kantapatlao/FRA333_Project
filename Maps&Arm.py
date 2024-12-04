@@ -83,7 +83,7 @@ def draw_map_border(screen, map_surface, width, height, new_width, new_height):
     
     # Draw border lines
     pygame.draw.rect(screen, black, 
-        (map_x, map_y, new_width, new_height), 2  # Line thickness of 2 pixels
+        (map_x, map_y, new_width, new_height), 1  # Line thickness of 2 pixels
     )
 
 def check_wall_collision(point, map_surface, new_width, new_height, width, height):
@@ -128,7 +128,9 @@ class Slider:
         self.selected = False
 
     def draw(self, screen):
+        # Draw the slider track
         pygame.draw.rect(screen, gray, (self.x, self.y, self.width, self.height))
+        # Draw the slider handle
         handle_x = self.x + (self.value - self.min_val) / (self.max_val - self.min_val) * self.width
         pygame.draw.circle(screen, light_gray, (int(handle_x), self.y + self.height // 2), self.handle_radius)
 
@@ -149,21 +151,57 @@ class RobotArm:
         self.joint_angles = [0, 0, 0]
         self.previous_safe_angles = [0, 0, 0]
         self.sliders = [Slider(slider_x, slider_y_start + i * slider_spacing, slider_width, slider_height) for i in range(3)]
+
         self.font = pygame.font.SysFont('Arial', 18)
         self.collision_detected = False
         self.collision_points = []  # Store collision points
         self.collision_links = []   # Store links with collisions
         
+        self.joint_positions = []
+        self.sliders = [Slider(slider_x, slider_y_start + i * slider_spacing, slider_width, slider_height) for i in range(3)]
+
+        self.paths = []  # To store paths for each joint
+
         self.map_surface = None
         self.new_width = 0
         self.new_height = 0
         self.screen_width = 0
         self.screen_height = 0
         
+
+    def calculate_joint_positions(self):
+        # คำนวณตำแหน่งข้อต่อจากมุมปัจจุบัน
+        self.joint_positions = [origin]
+        current_angle = 0
+        x, y = origin
+        for i, length in enumerate(Link_Lengths):
+            current_angle += self.joint_angles[i]
+            x += length * math.cos(current_angle)
+            y += length * math.sin(current_angle)
+            self.joint_positions.append((x, y))
+
+    def find_paths(self, goals):
+        """
+        สร้างเส้นทางของแขนกลไปยังตำแหน่งเป้าหมาย
+        """
+        self.paths = []  # Clear existing paths
+        current_position = origin
+
+        for goal in goals:
+            path = []  # เก็บจุดระหว่างทางสำหรับข้อต่อนี้
+            steps = 50  # จำนวนขั้นตอนในการเคลื่อนที่ไปยังเป้าหมาย
+
+            for t in range(steps + 1):
+                x = current_position[0] + (goal[0] - current_position[0]) * t / steps
+                y = current_position[1] + (goal[1] - current_position[1]) * t / steps
+                path.append((x, y))
+
+            self.paths.append(path)
+            current_position = goal  # อัปเดตตำแหน่งปัจจุบันไปยังเป้าหมายนี้
     def check_arm_collision(self, map_surface, new_width, new_height, width, height):
         # Reset collision tracking
         self.collision_points = []
-        self.collision_links = []
+        # self.collision_links = []
         
         # Get all joint positions
         joints = self.get_joint_positions()
@@ -173,15 +211,15 @@ class RobotArm:
             if (not is_point_inside_map(joint, map_surface, new_width, new_height, width, height)or
                 check_wall_collision(joint, map_surface, new_width, new_height, width, height)):
                 self.collision_points.append((joint, i))
-        
+                return True
         # Check each link for collision
-        for i in range(len(joints) - 1):
-            if check_line_collision(joints[i], joints[i+1], map_surface, new_width, new_height, width, height):
-                self.collision_links.append((joints[i], joints[i+1], i))
+        # for i in range(len(joints) - 1):
+        #     if check_line_collision(joints[i], joints[i+1], map_surface, new_width, new_height, width, height):
+        #         self.collision_links.append((joints[i], joints[i+1], i))
         
-        # Return True if any collision detected
-        return len(self.collision_points) > 0 or len(self.collision_links) > 0  
-    
+        # # Return True if any collision detected
+        # return len(self.collision_points) > 0 or len(self.collision_links) > 0  
+        return False
     def check_link_inside_map(self, start_point, end_point, map_surface, new_width, new_height, width, height, steps=20):
         # Check multiple points along the line
         for i in range(steps + 1):
@@ -196,22 +234,21 @@ class RobotArm:
         return False
     
     def update_from_slider(self):
+        updated_angles = self.joint_angles[:]
         for i, slider in enumerate(self.sliders):
-            self.joint_angles[i] = slider.value
-            
-        if (self.map_surface and self.check_arm_collision(self.map_surface, self.new_width, self.new_height, self.screen_width, self.screen_height)):
-            # Revert to previous safe angles
-            self.joint_angles = self.previous_safe_angles.copy()
-            
-            # Update sliders to match safe angles
-            for i, angle in enumerate(self.joint_angles):
-                self.sliders[i].value = angle
-            
-            return False  # Collision detected, movement prevented
-        
-        # Update previous safe angles
-        self.previous_safe_angles = self.joint_angles.copy()
-        return True
+            print(f"Updating slider {i}: current value={slider.value}")  # Debugging
+            updated_angles[i] = slider.value
+            self.joint_angles = updated_angles
+
+            if (self.map_surface and self.check_arm_collision(self.map_surface, self.new_width, self.new_height, self.screen_width, self.screen_height)):
+                print(f"Collision detected for joint {i}, reverting to previous safe angle")  # Debugging
+                updated_angles[i] = self.previous_safe_angles[i]
+                slider.value = self.previous_safe_angles[i]
+            else:
+                print(f"Joint {i} updated to {updated_angles[i]} without collision")  # Debugging
+                self.previous_safe_angles[i] = updated_angles[i]
+
+        self.joint_angles = updated_angles
     
     def set_map_parameters(self, map_surface, new_width, new_height, screen_width, screen_height):
         # Method to set map parameters
@@ -239,89 +276,20 @@ class RobotArm:
             screen.blit(text_surface, (slider_x, slider_y_start + i * slider_spacing - 30))
 
     def draw(self, screen):
-        joints = self.get_joint_positions()
-        
-        collision_detected = self.check_arm_collision(
-            map_surface,  # Pygame surface of the map
-            new_width,    # Width of the resized map
-            new_height,   # Height of the resized map
-            width,        # Total screen width
-            height        # Total screen height
-        )
-        for i in range(len(joints) - 1):
-            # Check if this link is in collision
-            link_color = red if any(l[0] == joints[i] and l[1] == joints[i+1] for l in self.collision_links) else black
-            pygame.draw.line(screen, link_color, joints[i], joints[i + 1], 6 if link_color == red else 4)
-        
-        for i, joint in enumerate(joints[:-1]):
-            # Check if this joint is in collision
-            joint_color = red if any(p[0] == joint for p in self.collision_points) else blue
-            pygame.draw.circle(screen, joint_color, (int(joint[0]), int(joint[1])), joint_radius)
-        
-        end_effector_color = red if collision_detected else green
-        pygame.draw.circle(screen, end_effector_color, 
-                           (int(joints[-1][0]), int(joints[-1][1])), 5)
-        
-        for joint in joints[:-1]:
-            pygame.draw.circle(screen, blue, (int(joint[0]), int(joint[1])), joint_radius)
-            end_effector_color = red if self.collision_detected else green
-            pygame.draw.circle(screen, end_effector_color, (int(joints[-1][0]), int(joints[-1][1])), 5)
-            
-        if collision_detected:
-            warning_font = pygame.font.SysFont('Arial', 24)
-            warning_text = warning_font.render("WALL COLLISION!", True, red)
-            screen.blit(warning_text, (20, height - 50))
-            
-        debug_font = pygame.font.SysFont('Arial', 18)
-        if self.collision_points:
-            for point, joint_index in self.collision_points:
-                debug_text = debug_font.render(
-                    f"Collision at Joint {joint_index}", 
-                    True, red
-                )
-                screen.blit(debug_text, (20, height - 100 - joint_index * 30))
-                
-        if self.collision_links:
-            for start, end, link_index in self.collision_links:
-                debug_text = debug_font.render(
-                    f"Collision on Link {link_index}", 
-                    True, red
-                )
-                screen.blit(debug_text, (20, height - 200 - link_index * 30))
+        print(f"Joint angles: {self.joint_angles}")  # Debugging
+        print(f"Slider values: {[slider.value for slider in self.sliders]}")  # Debugging
+        # Draw the map border
+        draw_map_border(screen, self.map_surface, self.screen_width, self.screen_height, self.new_width, self.new_height)
 
-        # Box position info
-        info_box_x = 20
-        info_box_y = 400
-        line_height = 30
-        
-        # Background rectangle for position info
-        info_width = 180
-        info_height = (len(joints) + 1) * line_height + 10
-        pygame.draw.rect(screen, (40, 40, 40), 
-                        (info_box_x - 10, info_box_y - 10,info_width, info_height))
-        # Draw joint positions
-        for i, pos in enumerate(joints[:-1]):  # All joints except end effector
-            # Convert coordinates to be relative to origin
-            rel_x = pos[0] - origin[0]
-            rel_y = -(pos[1] - origin[1])  
-            
-            text = f"Joint {i}: ({rel_x:.1f}, {rel_y:.1f})"
-            text_surface = self.font.render(text, True, light_gray)
-            screen.blit(text_surface, (info_box_x, info_box_y + i * line_height))
+        # Calculate joint positions
+        self.calculate_joint_positions()
 
-        # Draw end effector position
-        end_pos = joints[-1]
-        rel_x = end_pos[0] - origin[0]
-        rel_y = -(end_pos[1] - origin[1])  
-        
-        ee_text = f"End Effector: ({rel_x:.1f}, {rel_y:.1f})"
-        text_surface = self.font.render(ee_text, True, green)
-        screen.blit(text_surface, (info_box_x, info_box_y + len(joints) * line_height))
+        # Draw links and joints
+        for i in range(len(self.joint_positions) - 1):
+            pygame.draw.line(screen, black, self.joint_positions[i], self.joint_positions[i + 1], 4)
+            pygame.draw.circle(screen, blue, (int(self.joint_positions[i][0]), int(self.joint_positions[i][1])), joint_radius)
+        pygame.draw.circle(screen, green, (int(self.joint_positions[-1][0]), int(self.joint_positions[-1][1])), joint_radius)
 
-        # Draw origin position
-        pygame.draw.line(screen, black, (origin[0] - 10, origin[1]), (origin[0] + 10, origin[1]), 2)
-        pygame.draw.line(screen, black, (origin[0], origin[1] - 10), (origin[0], origin[1] + 10), 2)
-        
     def draw_sliders(self, screen):
         for slider in self.sliders:
             slider.draw(screen)
@@ -335,8 +303,17 @@ def main():
     robot = RobotArm()
     running = True
     robot.set_map_parameters(map_surface, new_width, new_height, width, height)
-    
+
+    # Example goals for each joint
+    goals = [
+        (200, 200),  # Goal for joint 1
+        (300, 300),  # Goal for joint 2
+        (400, 400)   # Goal for end effector
+    ]
+    robot.find_paths(goals)
+
     while running:
+
         screen.fill(white)
         screen.blit(map_surface, ((width - new_width) // 2, (height - new_height) // 2))
         draw_map_border(screen, map_surface, width, height, new_width, new_height)
@@ -344,7 +321,7 @@ def main():
         robot.draw_sliders(screen)
         pygame.display.flip()
         clock.tick(FPS)
-        
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -359,10 +336,11 @@ def main():
                         slider.selected = False
             elif event.type == pygame.MOUSEMOTION:
                 for slider in robot.sliders:
-                    if slider.update(event.pos[0]):
-                        robot.update_from_slider()
+                    if slider.is_handle_clicked(event.pos):
+                        print(f"Slider {robot.sliders.index(slider)} clicked")  # Debugging
+                        slider.selected = True
+
 
     pygame.quit()
-
 if __name__ == "__main__":
     main()
