@@ -1,4 +1,5 @@
 import os
+import math
 
 import numpy as np
 
@@ -7,10 +8,12 @@ from Path_Finding.map_optimizer import Discrete_map, Map
 import RobotARM.constant as R_const
 from RobotARM.robot import RobotArm
 from Map_Utils.visualize_map import map2img
+from A_Star.A_Star import A_Star
 
 # Constant value
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
+PI = math.pi
 
 MAP_PATH = os.path.join(os.path.abspath("Map"), 'map1.npy')
 
@@ -26,25 +29,16 @@ def main():
 
     # Initialized Robot arm object
     Robot = RobotArm([180,180,180])
-    # Robot.forward_kinematic([3.14/4,0,0])
+    Robot.forward_kinematic([PI/2, -PI, PI])
     Robot.set_base_position(100,600)
     screen.fill((255,255,255))
     map2img(screen, np_map, 100, 100)
 
-    # TODO: Resolve this
-    import random
-    bX = random.randint(0,50)
-    bY = abs(bX - random.randint(0,25))
-    print(f"Random target: {bX, bY}")
-    the_node = the_map.find_nearest_node(bX, bY)
-    the_node = the_node.scale_discrete_map(R_const.SCALING, R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y)
+    A = A_Star()
+    A.compute_path(0, 0, the_map, Robot)
 
-    sol = Robot.sequencial_IK_3(bX * 10, bY * 10)
-    Robot.forward_kinematic(sol[0])
-
-    pygame.draw.rect(screen, (150,100,0), ((the_node.posX, the_node.posY),(the_node.sizeX, the_node.sizeY)))
     Robot.draw_robot(screen, R_const.ROBOT_COORDINATE_X, R_const.ROBOT_COORDINATE_Y)
-    pygame.draw.circle(screen, (255,0,0), (bX * 10 + 100, (bY * 10) + 100), radius=3)
+    # pygame.draw.circle(screen, (255,0,0), (bX * 10 + 100, (bY * 10) + 100), radius=3)
 
     
 

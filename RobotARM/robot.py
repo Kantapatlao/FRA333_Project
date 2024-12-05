@@ -156,7 +156,7 @@ class RobotArm:
         
         return solution
 
-    # TODO: Calculate inverse kinematic (Newton-Raphson's method) <-- Should be better than above
+    # TODO: Calculate inverse kinematic (Rapid exploring random tree method) <-- Should be better than above
     
 
 
