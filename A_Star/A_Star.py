@@ -10,25 +10,55 @@ class A_Star:
     class _A_Star_Node:
         
         # initialized a node
-        def __init__(self, parent, sol, map_node, cost):
+        def __init__(self, parent, sol, map_node, cost, heuristic):
 
             self.parent = parent
             self.parent_sol = sol
+            self.sol_no = 0
             self.map_node = map_node
 
-            # This is evaluation value: Cost(how much joint change) and Heuristic(Eucledian distance)
+            # Cost: How much joint angle changes
             self.cost = cost
+            # Heuristic: Eucledian distance function
+            self.heuristic = heuristic
 
     # initialized the engine
     def __init__(self):
 
-        self.graph = []
+        self.graph_path = []
         self.end_node = []
         self.solution = []
 
 
     # From start node, compute path
     def compute_path(self, goal_x, goal_y, map_input, robot_input):
+
+        # Function to find config
+        def _find_config(map_node):
+            IK_solution = robot_input.sequencial_IK_3(map_node.get_center_pos()[0] * R_const.SCALING, map_node.get_center_pos()[1] * R_const.SCALING)
+            possible_solution = []
+            for sol in IK_solution:
+
+                robot_input.forward_kinematic(sol)
+
+                if robot_input.check_wall_collision(R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y, R_const.MAP_SIZE_X, R_const.MAP_SIZE_Y) == False:
+                    if robot_input.check_object_collision(map_input.list_obstacle()) == False:
+                    
+                        possible_solution.append(sol)
+
+            if len(possible_solution) == 0:
+                raise RuntimeError("All config collide with wall/obstacle.")
+
+            return possible_solution
+        
+
+        # Function to calculate cost
+        def _calculate_cost(last_conf, now_conf):
+
+            return sum([abs(n-l) for n,l in zip(now_conf, last_conf)])
+
+
+
 
         MAX_ITER = 10000
 
@@ -59,30 +89,46 @@ class A_Star:
         # Find nearest node
         start_node = map_input.find_nearest_node(math.floor(start_x / R_const.SCALING), math.floor(start_y / R_const.SCALING))
 
-        # Find best config reach first node
-        for sol in robot_input.sequencial_IK_3(start_node.get_center_pos()[0] * R_const.SCALING, start_node.get_center_pos()[1] * R_const.SCALING):
-
-            robot_input.forward_kinematic(sol)
-
-            if robot_input.check_wall_collision(R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y, R_const.MAP_SIZE_X, R_const.MAP_SIZE_Y) == False:
-                if robot_input.check_object_collision(map_input.list_obstacle()) == False:
-                    
-                    cost = sum([abs(n-s) for n,s in zip(sol, start_config)])
-                    heuristic = math.dist([robot_input.links[-1].end_positionX, robot_input.links[-1].end_positionY],[goal_x, goal_y])
-                    self.graph = [self._A_Star_Node(None, sol, start_node, cost+heuristic)]
-                    break
-
-        if len(self.graph) == 0:
-            raise RuntimeError("All config collide with wall/obstacle.")
-        
         # Find goal node
         goal_node = map_input.find_nearest_node(math.floor(goal_x / R_const.SCALING), math.floor(goal_y / R_const.SCALING))
 
+        # If node is the same
+        if start_node == goal_node:
+            IK_solution = robot_input.sequencial_IK_3(goal_x, goal_y)
+            possible_solution = []
+            for sol in IK_solution:
 
-        return 0
+                robot_input.forward_kinematic(sol)
+
+                if robot_input.check_wall_collision(R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y, R_const.MAP_SIZE_X, R_const.MAP_SIZE_Y) == False:
+                    if robot_input.check_object_collision(map_input.list_obstacle()) == False:
+                    
+                        possible_solution.append(sol)
+
+            if len(possible_solution) == 0:
+                raise RuntimeError("All config collide with wall/obstacle.")
+
+            robot_input.forward_kinematic(start_config)
+            return possible_solution[0]
+
+        # Find best config to reach first node
+        for sol in _find_config(start_node):
+            robot_input.forward_kinematic(sol)
+            self.graph_path.append(self._A_Star_Node( None,
+                                                      sol,
+                                                      start_node,
+                                                      _calculate_cost(start_config, sol), 
+                                                      math.dist((robot_input.links[-1].end_positionX, robot_input.links[-1].end_positionY),
+                                                                (goal_x, goal_y))
+                                                    ))
+            
+        # Sorted graph_path according to evaluation function: cost + heuristic
+        
+        
     
         # Do A* search
         iter_count = 0
+        best_goal = None
 
         while True:
 
@@ -93,13 +139,26 @@ class A_Star:
             if iter_count > MAX_ITER:
                 raise RuntimeError("Maximum iteration reached.")
             
-
+            # Check if goal is reached
+            if self.graph_path[0].map_node == goal_node:
+                
+                # Check if the goal is the best one
+                if self.graph_path[0] == best_goal:
+                    return self.solution
+                
+                else:
+                    best_goal = self.graph_path[0]
+            
             # Expand all node & all solution
-            nearby_node = map_input.find_adjacent_node(self.graph[0].map_node)
-            last_joint_config = self.graph
+            nearby_node = map_input.find_adjacent_node(self.graph_path[0].map_node)
+            last_joint_config = self.graph_path[0].parent_sol
+
+            # Find best config reach next node
+            
+                
 
             # Calculate cheapest node
-            nearby_node 
+            # nearby_node 
          
          
                 

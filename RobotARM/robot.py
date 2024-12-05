@@ -69,8 +69,8 @@ class RobotArm:
         for i in range(1,len(joint)):
 
             
-            self.links[i].angle = joint[i] + self.links[i-1].angle
-            j_buf = self.links[i].angle
+            self.links[i].angle = joint[i] 
+            j_buf = self.links[i].angle + sum([l.angle for l in self.links[:i]])
             self.links[i].end_positionX = self.links[i-1].end_positionX + (math.cos(j_buf) * self.links[i].LENGTH)
             self.links[i].end_positionY = self.links[i-1].end_positionY + (math.sin(j_buf) * self.links[i].LENGTH)
 
