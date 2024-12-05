@@ -33,7 +33,8 @@ def main():
 
     # TODO: Resolve this
     import random
-    bX, bY = random.randint(0,20), random.randint(0,20)
+    bX = random.randint(0,50)
+    bY = abs(bX - random.randint(0,25))
     print(f"Random target: {bX, bY}")
     the_node = the_map.find_nearest_node(bX, bY)
     the_node = the_node.scale_discrete_map(R_const.SCALING, R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y)

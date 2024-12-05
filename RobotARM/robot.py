@@ -116,20 +116,22 @@ class RobotArm:
         Reach2 = math.sqrt(((target_x - self.links[0].end_positionX) ** 2) + ((target_y - self.links[0].end_positionY) ** 2))
 
         solution = []
+        theta1 = self.links[0].angle
 
-        # if Reach2 > R2_min and Reach2 < R2_max:
+        if Reach2 > R2_min and Reach2 < R2_max:
             # # If yes, 4 solution are calculated. (don't move j1, j2,j3 config1, j2,j3 config2)
-            # buf_target_x = in_x - self.links[0].end_positionX
-            # buf_target_y = target_y - self.links[0].end_positionY
-            # cos_theta3 = ((buf_target_x ** 2) + (buf_target_y ** 2) - (self.links[1].LENGTH ** 2) - (self.links[2].LENGTH ** 2)) / (2 * self.links[1].LENGTH * self.links[2].LENGTH)
-            # sin_theta3a = math.sqrt(1 - (cos_theta3 ** 2))
-            # sin_theta3b = -1 * math.sqrt(1 - (cos_theta3 ** 2))
-            # theta3a = math.atan2(sin_theta3a, cos_theta3)
-            # theta3b = math.atan2(sin_theta3b, cos_theta3)
+            buf_target_x = target_x - (math.cos(theta1) * self.links[0].LENGTH)
+            buf_target_y = target_y - (math.sin(theta1) * self.links[0].LENGTH)
+            cos_theta3 = ((buf_target_x ** 2) + (buf_target_y ** 2) - (self.links[1].LENGTH ** 2) - (self.links[2].LENGTH ** 2)) / (2 * self.links[1].LENGTH * self.links[2].LENGTH)
+            sin_theta3a = math.sqrt(1 - (cos_theta3 ** 2))
+            sin_theta3b = -1 * sin_theta3a
 
-            # theta2a = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3a, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
-            # theta2b = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3b, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
-            # solution = [[self.links[0].angle, theta2a, theta3a], [self.links[0].angle, theta2b, theta3b]]
+            theta3a = math.atan2(sin_theta3a, cos_theta3)
+            theta3b = math.atan2(sin_theta3b, cos_theta3)
+            theta2a = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3a, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
+            theta2b = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3b, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
+            
+            solution = [[theta1, theta2a - theta1, theta3a], [theta1, theta2b - theta1, theta3b]]
         
         # If no, 2 solution are calcualted. (move j1 closest, j2,3 config1, j2,j3 config2)
         # Solve for joint 1 angle
@@ -138,17 +140,16 @@ class RobotArm:
         # Solve for joint 2,3 angle
         buf_target_x = target_x - (math.cos(theta1) * self.links[0].LENGTH)
         buf_target_y = target_y - (math.sin(theta1) * self.links[0].LENGTH)
-        cos_theta3 = (((buf_target_x) ** 2) + ((buf_target_y) ** 2) - (self.links[1].LENGTH ** 2) - (self.links[2].LENGTH ** 2)) / (2 * self.links[1].LENGTH * self.links[2].LENGTH)
+        cos_theta3 = ((buf_target_x ** 2) + (buf_target_y ** 2) - (self.links[1].LENGTH ** 2) - (self.links[2].LENGTH ** 2)) / (2 * self.links[1].LENGTH * self.links[2].LENGTH)
         sin_theta3a = math.sqrt(1 - (cos_theta3 ** 2))
-        sin_theta3b = -1 * math.sqrt(1 - (cos_theta3 ** 2))
+        sin_theta3b = -1 * sin_theta3a
 
         theta3a = math.atan2(sin_theta3a, cos_theta3)
         theta3b = math.atan2(sin_theta3b, cos_theta3)
         theta2a = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3a, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
         theta2b = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3b, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
             
-        solution = solution + [[theta1, theta2a, theta3a], [theta1, theta2b, theta3b]]    
-        # solution = [[theta1, 0, 0]]    
+        solution = solution + [[theta1, theta2a - theta1, theta3a], [theta1, theta2b - theta1, theta3b]]    
 
         # Sorted according to which solution move joint the least (from current config)
         solution = sorted(solution, key = lambda sol: abs(sol[0] - self.links[0].angle) + abs(sol[1] - self.links[1].angle) + abs(sol[2] - self.links[2].angle))
