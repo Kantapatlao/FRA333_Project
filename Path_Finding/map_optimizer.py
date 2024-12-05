@@ -31,6 +31,22 @@ class Discrete_map:
         y = self.posY + math.floor(self.sizeY / 2)
 
         return (x,y)
+    
+
+    def get_bottom_right_pos(self):
+
+        return (self.posX + self.sizeX - 1, self.posY + self.sizeY - 1)
+    
+    # Scale map to match pygame's coordinate
+    def scale_discrete_map(self, scale, x_offset, y_offset):
+
+        return Discrete_map(self.value,
+                            self.posX * scale + x_offset,
+                            self.posY * scale + y_offset,
+                            self.sizeX * scale,
+                            self.sizeY * scale)
+
+
 
 
 class Map:
@@ -67,6 +83,8 @@ class Map:
         self.full_map = in_map
         self.tree_map = self.__map_discretizer_engine(BT_Node(self.full_map, 0, 0))
         self.optimized_map = self.__graph_dump_engine()
+        self.obstacle_list = []
+
 
         # Since __map_collapser() can't garantee fully collapsed map in one iteration
         
@@ -89,11 +107,253 @@ class Map:
 
             collapse_iter = collapse_iter + 1 
 
-        
+        # List obstacle
+        for node in self.optimized_map:
+            if node.value == 1:
+                self.obstacle_list.append(node)
         return None
                 
         
+    # Find adjacent node of input node
+    def find_adjacent_node(self, input_node):
+
+        # Check input type
+        if type(input_node) is not Discrete_map:
+            raise TypeError("input_node only take Discrete_map object as input.")
+        
+
+        # Declare a list to store adjacent node
+        adjacent_node = []
+
+        # Adjacent to the right
+        # find node that are on the same X coordinate as right side of input node (ignore Y position(posY) for now)
+        candidate_node = []
+        for n in self.optimized_map:
+            if n.posX == input_node.get_bottom_right_pos()[0] + 1 and n.value == 0:
+                candidate_node.append(n)
+        
+        # Sort candidate according to Y position (posY attribute)
+        candidate_node = sorted(candidate_node, key = lambda n: n.posY)
+
+        # Linear search adjacent node from canidate list
+        did_truncate = False
+        
+        # Remove node in front that doesn't sit adjacent to the input_node
+        for i, n in enumerate(candidate_node):
+
+            if n.posY == input_node.posY:
+                candidate_node = candidate_node[i:]
+                did_truncate = True
+                break
+
+            elif n.posY > input_node.posY:
+                candidate_node = candidate_node[i-1:]
+                did_truncate = True
+                break
+
+        # Handle edge case which where the last node is still leading the input_node edge
+        if not did_truncate:
+            candidate_node = candidate_node[len(candidate_node)-1:]
+
+        # Remove node in the back that doesn't sit adjacent to the input_node
+        for i, n in enumerate(candidate_node):
+
+            if n.posY == input_node.posY + input_node.sizeY:
+                candidate_node = candidate_node[:i+1]
+                break
+
+            elif n.posY > input_node.posY + input_node.sizeY:
+                candidate_node = candidate_node[:i]
+                break
+
+        
+        # Append remaining node (Node that is adjacent to input_node) to adjacent_node
+        adjacent_node = adjacent_node + candidate_node
+
+        # Adjacent to the bottom
+        # find node that are on the same Y coordinate as bottom side of input node (ignore X position(posX) for now)
+        candidate_node = []
+        for n in self.optimized_map:
+            if n.posY == input_node.get_bottom_right_pos()[1] + 1 and n.value == 0:
+                candidate_node.append(n)
+        
+        # Sort candidate according to Y position (posY attribute)
+        candidate_node = sorted(candidate_node, key = lambda n: n.posX)
+
+        # Linear search adjacent node from canidate list
+        did_truncate = False
+
+        # Remove node in front that doesn't sit adjacent to the input_node
+        for i, n in enumerate(candidate_node):
+
+            if n.posX == input_node.posX:
+                candidate_node = candidate_node[i:]
+                did_truncate = True
+                break
+
+            elif n.posX > input_node.posX:
+                candidate_node = candidate_node[i-1:]
+                did_truncate = True
+                break
+
+        # Handle edge case which where the last node is still leading the input_node edge
+        if not did_truncate:
+            candidate_node = candidate_node[len(candidate_node)-1:]
+
+        # Remove node in the back that doesn't sit adjacent to the input_node
+        for i, n in enumerate(candidate_node):
+
+            if n.posX == input_node.posX + input_node.sizeX:
+                candidate_node = candidate_node[:i+1]
+                break
+
+            elif n.posX > input_node.posX + input_node.sizeX:
+                candidate_node = candidate_node[:i]
+                break
+
+        # Append remaining node (Node that is adjacent to input_node) to adjacent_node
+        adjacent_node = adjacent_node + candidate_node
+        
+        
+        # Adjacent to the left
+        # find node that are on the same X coordinate as left side of input node (ignore Y position(posY) for now)
+        candidate_node = []
+        for n in self.optimized_map:
+            if n.get_bottom_right_pos()[0] == input_node.posX - 1 and n.value == 0:
+                candidate_node.append(n)
+
+        # Sort candidate according to Y position (posY attribute)
+        candidate_node = sorted(candidate_node, key = lambda n: n.posY)
+
+        # Linear search adjacent node from canidate list
+        did_truncate = False
+
+        # Remove node in front that doesn't sit adjacent to the input_node
+        for i, n in enumerate(candidate_node):
+
+            if n.posY == input_node.posY:
+                candidate_node = candidate_node[i:]
+                did_truncate = True
+                break
+
+            elif n.posY > input_node.posY:
+                candidate_node = candidate_node[i-1:]
+                did_truncate = True
+                break
+
+        # Handle edge case which where the last node is still leading the input_node edge
+        if not did_truncate:
+            candidate_node = candidate_node[len(candidate_node)-1:]
+
+        # Remove node in the back that doesn't sit adjacent to the input_node
+        for i, n in enumerate(candidate_node):
+
+            if n.posY == input_node.posY + input_node.sizeY:
+                candidate_node = candidate_node[:i+1]
+                break
+
+            elif n.posY > input_node.posY + input_node.sizeY:
+                candidate_node = candidate_node[:i]
+                break
+
+            
+        # Append remaining node (Node that is adjacent to input_node) to adjacent_node
+        adjacent_node = adjacent_node + candidate_node
+        
+        
+        # Adjacent to the top
+        # find node that are on the same Y coordinate as top side of input node (ignore X position(posX) for now)
+        candidate_node = []
+        for n in self.optimized_map:
+            if n.get_bottom_right_pos()[1] == input_node.posY - 1 and n.value == 0:
+                candidate_node.append(n)
+        
+        # Sort candidate according to Y position (posY attribute)
+        candidate_node = sorted(candidate_node, key = lambda n: n.posX)
+
+        # Linear search adjacent node from canidate list
+        did_truncate = False
+        
+        # Remove node in front that doesn't sit adjacent to the input_node
+        for i, n in enumerate(candidate_node):
+
+            if n.posX == input_node.posX:
+                candidate_node = candidate_node[i:]
+                did_truncate = True
+                break
+
+            elif n.posX > input_node.posX:
+                candidate_node = candidate_node[i-1:]
+                did_truncate = True
+                break
+
+        # Handle edge case which where the last node is still leading the input_node edge
+        if not did_truncate:
+            candidate_node = candidate_node[len(candidate_node)-1:]
+
+        # Remove node in the back that doesn't sit adjacent to the input_node
+        for i, n in enumerate(candidate_node):
+
+            if n.posX == input_node.posX + input_node.sizeX:
+                candidate_node = candidate_node[:i+1]
+                break
+
+            elif n.posX > input_node.posX + input_node.sizeX:
+                candidate_node = candidate_node[:i]
+                break
+
+        # Append remaining node (Node that is adjacent to input_node) to adjacent_node
+        adjacent_node = adjacent_node + candidate_node
+
+        return adjacent_node
+
+
+    # Find nearest node in map
+    def find_nearest_node(self, x, y):
+
+        # Check input type
+        if type(x) is not int:
+            raise TypeError("x only take integer as an input.")
+        
+        if type(y) is not int:
+            raise TypeError("y only take integer as an input.")
+        
+        # check if x,y position is bigger than map or not
+        if x > self.full_map.shape[1] or y > self.full_map.shape[0]:
+            raise ValueError(f"Specify coordinate is outside the map. Map size is {self.full_map.shape}")
+
+        # Linear search each node
+        for node in self.optimized_map:
+            if x >= node.posX and x <= node.posX + node.sizeX:
+                if y >= node.posY and y <= node.posY + node.sizeY:
+                    return node
+        
+        raise RuntimeError(f"Can't find nearest node to {x,y} coordinate.")
     
+    # List obstacle in map
+    def list_obstacle(self):
+        obstacle_list = []
+        for n in self.optimized_map:
+            if n.value == 1:
+                obstacle_list.append(n)
+    
+        return obstacle_list
+
+    # Show content in graph_map
+    def show_graph(self):
+
+        # Show info of each node
+        for node in self.optimized_map:
+            print("Node: ", node)
+            print("Position: ", node.posX, node.posY)
+            print("Center Pos: ", node.get_center_pos())
+            print("Size: ", node.sizeX, node.sizeY)
+            print("Value: ", node.value)
+
+        return None
+    
+
+
             
 
     # Turn map into discrete grid map
@@ -156,14 +416,14 @@ class Map:
         map_one = []
 
         for node in graph:
-            if node.data.value == 1:
+            if node.value == 1:
                 map_one.append(node)
 
-            elif node.data.value == 0:
+            elif node.value == 0:
                 map_zero.append(node)
 
             else:
-                raise ValueError(f'Unknown value: {node.data.value} in discrete map array.')
+                raise ValueError(f'Unknown value: {node.value} in discrete map array.')
             
 
 
@@ -178,8 +438,8 @@ class Map:
                 raise RuntimeError("Max iteration for collapsing map node is reached.")
             
             # Calculate position of adjacent node to search through
-            near_node_column = (map_zero[iter].posX + map_zero[iter].data.sizeX, map_zero[iter].posY)
-            near_node_row = (map_zero[iter].posX, map_zero[iter].posY + map_zero[iter].data.sizeY)
+            near_node_column = (map_zero[iter].posX + map_zero[iter].sizeX, map_zero[iter].posY)
+            near_node_row = (map_zero[iter].posX, map_zero[iter].posY + map_zero[iter].sizeY)
 
             # Search for adjacent node
             for node in map_zero[iter:]:
@@ -188,9 +448,9 @@ class Map:
                 if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
                     
                     # Check if the row size are same if yes, join them together
-                    if node.data.sizeY == map_zero[iter].data.sizeY:
+                    if node.sizeY == map_zero[iter].sizeY:
                         
-                        map_zero[iter].data.sizeX = map_zero[iter].data.sizeX + node.data.sizeX
+                        map_zero[iter].sizeX = map_zero[iter].sizeX + node.sizeX
                         map_zero.remove(node)
                         iter = iter - 1
                     
@@ -200,9 +460,9 @@ class Map:
                 if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
                     
                     # Check if the column size are same if yes, join them together
-                    if node.data.sizeX == map_zero[iter].data.sizeX:
+                    if node.sizeX == map_zero[iter].sizeX:
                          
-                        map_zero[iter].data.sizeY = map_zero[iter].data.sizeY + node.data.sizeY
+                        map_zero[iter].sizeY = map_zero[iter].sizeY + node.sizeY
                         map_zero.remove(node)
                         iter = iter - 1
 
@@ -222,8 +482,8 @@ class Map:
             
 
             # Calculate position of adjacent node to search through
-            near_node_column = (map_one[iter].posX + map_one[iter].data.sizeX, map_one[iter].posY)
-            near_node_row = (map_one[iter].posX, map_one[iter].posY + map_one[iter].data.sizeY)
+            near_node_column = (map_one[iter].posX + map_one[iter].sizeX, map_one[iter].posY)
+            near_node_row = (map_one[iter].posX, map_one[iter].posY + map_one[iter].sizeY)
 
             # Search for adjacent node
             for node in map_one[iter:]:
@@ -232,9 +492,9 @@ class Map:
                 if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
                     
                     # Check if the row size are same if yes, join them together
-                    if node.data.sizeY == map_one[iter].data.sizeY:
+                    if node.sizeY == map_one[iter].sizeY:
                         
-                        map_one[iter].data.sizeX = map_one[iter].data.sizeX + node.data.sizeX
+                        map_one[iter].sizeX = map_one[iter].sizeX + node.sizeX
                         map_one.remove(node)
                         iter = iter - 1
                     
@@ -244,9 +504,9 @@ class Map:
                 if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
                     
                     # Check if the column size are same if yes, join them together
-                    if node.data.sizeX == map_one[iter].data.sizeX:
+                    if node.sizeX == map_one[iter].sizeX:
                         
-                        map_one[iter].data.sizeY = map_one[iter].data.sizeY + node.data.sizeY
+                        map_one[iter].sizeY = map_one[iter].sizeY + node.sizeY
                         map_one.remove(node)
                         iter = iter - 1
 
@@ -258,23 +518,7 @@ class Map:
         return map_zero + map_one
     
 
-    # Show content in graph_map
-    def show_graph(self):
-
-        # get populated graph in form of list
-        graph = self.optimized_map
-
-        # Show info of each node
-        for node in graph:
-            print("Node: ", node)
-            print("Position: ", node.data.posX, node.data.posY)
-            print("Center Pos: ", node.data.get_center_pos())
-            print("Size: ", node.data.sizeX, node.data.sizeY)
-            print("Value: ", node.data.value)
-
-        return None
-
-
+    
     # Breadth first search engine
     def __graph_dump_engine(self):
         
@@ -294,7 +538,7 @@ class Map:
 
 
             if node_queue[queue_iter].data is not None:
-                selected_node.append(node_queue[queue_iter])
+                selected_node.append(node_queue[queue_iter].data)
 
             if node_queue[queue_iter].childA is not None:
                 node_queue.append(node_queue[queue_iter].childA)
