@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import pygame
+from Path_Finding.map_optimizer import Discrete_map
 
 # Declare Robot arm object
 class RobotArm:
@@ -127,37 +128,50 @@ class RobotArm:
         return False
     
     
-    
-    
-    
-    # Draw Robot
-    def draw_robot(self, pygame_screen, base_x, base_y, y_max):
+    # Check collision to obstacle
+    def check_object_collision(self, obstacle_list):
 
         # Check input type
-        if type(base_x) is not int:
-            raise TypeError("base_x only take integer as input.")
+        if type(obstacle_list) is not list:
+            raise TypeError("obstacle_list only take list of discrete map.")
         
-        if type(base_y) is not int:
-            raise TypeError("base_y only take integer as input.")
+        for i, o in enumerate(obstacle_list):
+            if type(o) is not Discrete_map:
+                raise TypeError(f"obstacle {i} is not Discrete_map object")
+    
+    # Draw Robot
+    def draw_robot(self, pygame_screen, base_x=None, base_y=None):
+
+        # If doesn't provide base location suggest that base location is already drawn
+        if base_x is None or base_y is None:
+            if self.base_position is None:
+                raise ValueError("base position is never assigned.")
+            
+            
+        else:
+            # Check input type
+            if type(base_x) is not int:
+                raise TypeError("base_x only take integer as input.")
+
+            if type(base_y) is not int:
+                raise TypeError("base_y only take integer as input.")
         
-        if type(y_max) is not int:
-            raise TypeError("y_max only take integer as input.")
         
-        self.base_position = (base_x, base_y)
+            self.base_position = (base_x, base_y)
         
 
         pygame.draw.line(pygame_screen, 
                         (0,255,0),
-                        (base_x, base_y),
-                        (self.links[0].end_positionX + base_x, base_y - self.links[0].end_positionY),
+                        (self.base_position[0], self.base_position[1]),
+                        (self.links[0].end_positionX + self.base_position[0], self.base_position[1] - self.links[0].end_positionY),
                         width=5
                         )
 
-        for i,link in enumerate(self.links):
+        for i in range(1, len(self.links)):
             pygame.draw.line(pygame_screen,
                             (0,255,0), 
-                            (self.links[i-1].end_positionX + base_x, base_y - self.links[i-1].end_positionY),
-                            (self.links[i].end_positionX + base_x, base_y - self.links[i].end_positionY),
+                            (self.links[i-1].end_positionX + self.base_position[0], self.base_position[1] - self.links[i-1].end_positionY),
+                            (self.links[i].end_positionX + self.base_position[0], self.base_position[1] - self.links[i].end_positionY),
                             width=5
                             )
             

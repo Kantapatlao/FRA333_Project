@@ -13,9 +13,9 @@ for i in range(5):
     foo = Map(m)
     # foo.show_graph()
     print(len(foo.optimized_map) * 100 / 2500, end='%\n')
-
+    print(foo.full_map.shape)
     print('*' * 30)
-    plt.imshow(m, cmap='grey', interpolation='nearest')
-    plt.axis('off')
-    plt.show()
+    # plt.imshow(m, cmap='grey', interpolation='nearest')
+    # plt.axis('off')
+    # plt.show()
      

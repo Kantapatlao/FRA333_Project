@@ -98,171 +98,6 @@ class Map:
         return None
                 
         
-    
-            
-
-    # Turn map into discrete grid map
-    def __map_discretizer_engine(self, node):
-
-        # Recursive stop condition: If input map have the same value (if it's a single dot, it'll always have 1 value).
-        if np.unique(node.data).size == 1:
-
-            # Turn np.ndarray to discrete_map obj
-            node.data = Discrete_map(
-                value_in = np.unique(node.data)[0],
-                posX_in = node.posX,
-                posY_in = node.posY,
-                sizeX_in = node.data.shape[1],
-                sizeY_in = node.data.shape[0]
-            )
-            return node
-
-        # Half the map, compute property, then delete data hold by parent node
-        # Half wider side
-        if (node.data.shape[0] > node.data.shape[1]):
-            # Half row
-            half_point = math.floor(node.data.shape[0] / 2)
-            map_for_a = node.data[:half_point, :]
-            map_for_b = node.data[half_point:, :]
-            a_x = node.posX
-            a_y = node.posY
-            b_x = node.posX
-            b_y = node.posY + half_point
-            
-            
-        else:
-            # Half column
-            half_point = math.floor(node.data.shape[1] / 2)
-            map_for_a = node.data[:, :half_point]
-            map_for_b = node.data[:, half_point:]
-            a_x = node.posX
-            a_y = node.posY
-            b_x = node.posX + half_point
-            b_y = node.posY
-
-        # Clean up data and assign to child node
-        node.data = None
-        node.childA = self.__map_discretizer_engine(BT_Node(map_for_a, a_x, a_y))
-        node.childB = self.__map_discretizer_engine(BT_Node(map_for_b, b_x, b_y))
-
-        return node
-    
-
-    # Join near by map with same value together
-    # Note: Does not garantee to finished in single iteration
-    def __map_collapser(self, graph):
-
-        # Max iteration constant
-        MAX_ITER = 10000
-
-
-        # Get each discrete map node in form of list, seperate to two piles
-        map_zero = []
-        map_one = []
-
-        for node in graph:
-            if node.value == 1:
-                map_one.append(node)
-
-            elif node.value == 0:
-                map_zero.append(node)
-
-            else:
-                raise ValueError(f'Unknown value: {node.value} in discrete map array.')
-            
-
-
-        # Collapse adjacent map (with value = 0) back together
-        iter = 0
-
-        # Iterate through each node
-        while len(map_zero) > iter + 1:
-
-            # Max iteration stop condition
-            if iter > MAX_ITER:
-                raise RuntimeError("Max iteration for collapsing map node is reached.")
-            
-            # Calculate position of adjacent node to search through
-            near_node_column = (map_zero[iter].posX + map_zero[iter].sizeX, map_zero[iter].posY)
-            near_node_row = (map_zero[iter].posX, map_zero[iter].posY + map_zero[iter].sizeY)
-
-            # Search for adjacent node
-            for node in map_zero[iter:]:
-                
-                # If found a node adjacent in the same row (but next column)
-                if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
-                    
-                    # Check if the row size are same if yes, join them together
-                    if node.sizeY == map_zero[iter].sizeY:
-                        
-                        map_zero[iter].sizeX = map_zero[iter].sizeX + node.sizeX
-                        map_zero.remove(node)
-                        iter = iter - 1
-                    
-                        break
-
-                # If found a node adjacent in the same column (but next row)
-                if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
-                    
-                    # Check if the column size are same if yes, join them together
-                    if node.sizeX == map_zero[iter].sizeX:
-                         
-                        map_zero[iter].sizeY = map_zero[iter].sizeY + node.sizeY
-                        map_zero.remove(node)
-                        iter = iter - 1
-
-                        break
-
-            iter = iter + 1
-
-        # Collapse adjacent map (with value = 1) back together
-        iter = 0
-
-        # Iterate through each node
-        while len(map_one) > iter + 1:
-
-            # Max iteration stop condition
-            if iter > MAX_ITER:
-                raise RuntimeError("Max iteration for collapsing map node is reached.")
-            
-
-            # Calculate position of adjacent node to search through
-            near_node_column = (map_one[iter].posX + map_one[iter].sizeX, map_one[iter].posY)
-            near_node_row = (map_one[iter].posX, map_one[iter].posY + map_one[iter].sizeY)
-
-            # Search for adjacent node
-            for node in map_one[iter:]:
-
-                # If found a node adjacent in the same row (but next column)
-                if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
-                    
-                    # Check if the row size are same if yes, join them together
-                    if node.sizeY == map_one[iter].sizeY:
-                        
-                        map_one[iter].sizeX = map_one[iter].sizeX + node.sizeX
-                        map_one.remove(node)
-                        iter = iter - 1
-                    
-                        break
-
-                # If found a node adjacent in the same column (but next row)
-                if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
-                    
-                    # Check if the column size are same if yes, join them together
-                    if node.sizeX == map_one[iter].sizeX:
-                        
-                        map_one[iter].sizeY = map_one[iter].sizeY + node.sizeY
-                        map_one.remove(node)
-                        iter = iter - 1
-
-                        break
-
-            iter = iter + 1
-            
-
-        return map_zero + map_one
-    
-
     # Find adjacent node of input node
     def find_adjacent_node(self, input_node):
 
@@ -457,6 +292,28 @@ class Map:
         return adjacent_node
 
 
+    # Find nearest node in map
+    def find_nearest_node(self, x, y):
+
+        # Check input type
+        if type(x) is not int:
+            raise TypeError("x only take integer as an input.")
+        
+        if type(y) is not int:
+            raise TypeError("y only take integer as an input.")
+        
+        # check if x,y position is bigger than map or not
+        if x > self.full_map.shape[1] or y > self.full_map.shape[0]:
+            raise ValueError(f"Specify coordinate is outside the map. Map size is {self.full_map.shape}")
+
+        # Linear search each node
+        for node in self.optimized_map:
+            if x >= node.posX and x <= node.posX + node.sizeX:
+                if y >= node.posY and y <= node.posY + node.sizeY:
+                    return node
+        
+        raise RuntimeError(f"Can't find nearest node to {x,y} coordinate.")
+    
     # Show content in graph_map
     def show_graph(self):
 
@@ -469,8 +326,174 @@ class Map:
             print("Value: ", node.value)
 
         return None
+    
 
 
+            
+
+    # Turn map into discrete grid map
+    def __map_discretizer_engine(self, node):
+
+        # Recursive stop condition: If input map have the same value (if it's a single dot, it'll always have 1 value).
+        if np.unique(node.data).size == 1:
+
+            # Turn np.ndarray to discrete_map obj
+            node.data = Discrete_map(
+                value_in = np.unique(node.data)[0],
+                posX_in = node.posX,
+                posY_in = node.posY,
+                sizeX_in = node.data.shape[1],
+                sizeY_in = node.data.shape[0]
+            )
+            return node
+
+        # Half the map, compute property, then delete data hold by parent node
+        # Half wider side
+        if (node.data.shape[0] > node.data.shape[1]):
+            # Half row
+            half_point = math.floor(node.data.shape[0] / 2)
+            map_for_a = node.data[:half_point, :]
+            map_for_b = node.data[half_point:, :]
+            a_x = node.posX
+            a_y = node.posY
+            b_x = node.posX
+            b_y = node.posY + half_point
+            
+            
+        else:
+            # Half column
+            half_point = math.floor(node.data.shape[1] / 2)
+            map_for_a = node.data[:, :half_point]
+            map_for_b = node.data[:, half_point:]
+            a_x = node.posX
+            a_y = node.posY
+            b_x = node.posX + half_point
+            b_y = node.posY
+
+        # Clean up data and assign to child node
+        node.data = None
+        node.childA = self.__map_discretizer_engine(BT_Node(map_for_a, a_x, a_y))
+        node.childB = self.__map_discretizer_engine(BT_Node(map_for_b, b_x, b_y))
+
+        return node
+    
+
+    # Join near by map with same value together
+    # Note: Does not garantee to finished in single iteration
+    def __map_collapser(self, graph):
+
+        # Max iteration constant
+        MAX_ITER = 10000
+
+
+        # Get each discrete map node in form of list, seperate to two piles
+        map_zero = []
+        map_one = []
+
+        for node in graph:
+            if node.value == 1:
+                map_one.append(node)
+
+            elif node.value == 0:
+                map_zero.append(node)
+
+            else:
+                raise ValueError(f'Unknown value: {node.value} in discrete map array.')
+            
+
+
+        # Collapse adjacent map (with value = 0) back together
+        iter = 0
+
+        # Iterate through each node
+        while len(map_zero) > iter + 1:
+
+            # Max iteration stop condition
+            if iter > MAX_ITER:
+                raise RuntimeError("Max iteration for collapsing map node is reached.")
+            
+            # Calculate position of adjacent node to search through
+            near_node_column = (map_zero[iter].posX + map_zero[iter].sizeX, map_zero[iter].posY)
+            near_node_row = (map_zero[iter].posX, map_zero[iter].posY + map_zero[iter].sizeY)
+
+            # Search for adjacent node
+            for node in map_zero[iter:]:
+                
+                # If found a node adjacent in the same row (but next column)
+                if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
+                    
+                    # Check if the row size are same if yes, join them together
+                    if node.sizeY == map_zero[iter].sizeY:
+                        
+                        map_zero[iter].sizeX = map_zero[iter].sizeX + node.sizeX
+                        map_zero.remove(node)
+                        iter = iter - 1
+                    
+                        break
+
+                # If found a node adjacent in the same column (but next row)
+                if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
+                    
+                    # Check if the column size are same if yes, join them together
+                    if node.sizeX == map_zero[iter].sizeX:
+                         
+                        map_zero[iter].sizeY = map_zero[iter].sizeY + node.sizeY
+                        map_zero.remove(node)
+                        iter = iter - 1
+
+                        break
+
+            iter = iter + 1
+
+        # Collapse adjacent map (with value = 1) back together
+        iter = 0
+
+        # Iterate through each node
+        while len(map_one) > iter + 1:
+
+            # Max iteration stop condition
+            if iter > MAX_ITER:
+                raise RuntimeError("Max iteration for collapsing map node is reached.")
+            
+
+            # Calculate position of adjacent node to search through
+            near_node_column = (map_one[iter].posX + map_one[iter].sizeX, map_one[iter].posY)
+            near_node_row = (map_one[iter].posX, map_one[iter].posY + map_one[iter].sizeY)
+
+            # Search for adjacent node
+            for node in map_one[iter:]:
+
+                # If found a node adjacent in the same row (but next column)
+                if node.posX == near_node_column[0] and node.posY == near_node_column[1]:
+                    
+                    # Check if the row size are same if yes, join them together
+                    if node.sizeY == map_one[iter].sizeY:
+                        
+                        map_one[iter].sizeX = map_one[iter].sizeX + node.sizeX
+                        map_one.remove(node)
+                        iter = iter - 1
+                    
+                        break
+
+                # If found a node adjacent in the same column (but next row)
+                if node.posX == near_node_row[0] and node.posY == near_node_row[1]:
+                    
+                    # Check if the column size are same if yes, join them together
+                    if node.sizeX == map_one[iter].sizeX:
+                        
+                        map_one[iter].sizeY = map_one[iter].sizeY + node.sizeY
+                        map_one.remove(node)
+                        iter = iter - 1
+
+                        break
+
+            iter = iter + 1
+            
+
+        return map_zero + map_one
+    
+
+    
     # Breadth first search engine
     def __graph_dump_engine(self):
         
