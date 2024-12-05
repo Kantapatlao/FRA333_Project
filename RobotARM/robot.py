@@ -27,8 +27,8 @@ class RobotArm:
             if type(l) is not int:
                 raise TypeError(f'{i} element of link_len is not integer.')
             
-            if l < 0:
-                raise ValueError(f'{i} element of link_len can not be negative value.')
+            if l <= 0:
+                raise ValueError(f'{i} element of link_len can not be negative or zero.')
         
         self.base_position = None
         self.links = [self._joint(l) for l in link_len]
@@ -78,14 +78,85 @@ class RobotArm:
 
         
 
-            
-
-
                 
-    # Calculate inverse kinematic (Sequencial kinematic)
+    # Calculate inverse kinematic (Sequencial inverse kinematic)
+    def sequencial_IK_3(self, in_x, in_y):
 
+        # Check input type
+        if type(in_x) is not int:
+            raise TypeError("in_x only takes integer as input.")
+        
+        if type(in_y) is not int:
+            raise TypeError("in_y only takes integer as input.") 
+        
+        if self.base_position is None:
+            raise ValueError("base_position is not assigned yet.")
+        
+        target_x = in_x + R_const.ROBOT_COORDINATE_X
+        target_y = R_const.ROBOT_COORDINATE_Y - in_y
+        
+        
+        # Check if it's possible to reach or not
+        link_len_sort = sorted([l.LENGTH for l in self.links], reverse=True)
+        R_max = sum(link_len_sort)
+        R_min = link_len_sort[0] - sum(link_len_sort[1:])
+        Reach = math.sqrt(((in_x)** 2) + ((in_y) ** 2))
 
-    # TODO: Calculate inverse kinematic (Newton-Raphson's method)
+        if Reach < R_min or Reach > R_max:
+            raise ValueError("Can't reach specify target, link not long enough.")
+        
+        # NOTE: In order for this algorithm to solve IK, it must have link2,3 longer than link 1.
+        if self.links[0].LENGTH > self.links[1].LENGTH + self.links[2].LENGTH:
+            raise SystemError("This algorithm can't solve robot arm with link 2,3 shorter than link 1.")
+        
+
+        # Check if joint 2,3 can reach on target on their own
+        R2_max = self.links[1].LENGTH + self.links[2].LENGTH
+        R2_min = self.links[1].LENGTH- self.links[2].LENGTH
+        Reach2 = math.sqrt(((in_x - self.links[0].end_positionX) ** 2) + ((in_y - self.links[0].end_positionY) ** 2))
+
+        solution = []
+
+        # if Reach2 > R2_min and Reach2 < R2_max:
+            # # If yes, 4 solution are calculated. (don't move j1, j2,j3 config1, j2,j3 config2)
+            # buf_target_x = in_x - self.links[0].end_positionX
+            # buf_target_y = target_y - self.links[0].end_positionY
+            # cos_theta3 = ((buf_target_x ** 2) + (buf_target_y ** 2) - (self.links[1].LENGTH ** 2) - (self.links[2].LENGTH ** 2)) / (2 * self.links[1].LENGTH * self.links[2].LENGTH)
+            # sin_theta3a = math.sqrt(1 - (cos_theta3 ** 2))
+            # sin_theta3b = -1 * math.sqrt(1 - (cos_theta3 ** 2))
+            # theta3a = math.atan2(sin_theta3a, cos_theta3)
+            # theta3b = math.atan2(sin_theta3b, cos_theta3)
+
+            # theta2a = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3a, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
+            # theta2b = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3b, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
+            # solution = [[self.links[0].angle, theta2a, theta3a], [self.links[0].angle, theta2b, theta3b]]
+        
+        # If no, 2 solution are calcualted. (move j1 closest, j2,3 config1, j2,j3 config2)
+        # Solve for joint 1 angle
+        joint_offset = self.links[0].angle - math.atan2(self.links[2].end_positionY, self.links[2].end_positionX)
+        theta1 = math.atan2(target_y, target_x) 
+
+        # Solve for joint 2,3 angle
+        # buf_target_x = target_x - (math.cos(theta1) * self.links[0].LENGTH)
+        # buf_target_y = target_y - (math.sin(theta1) * self.links[0].LENGTH)
+        # cos_theta3 = (((buf_target_x) ** 2) + ((buf_target_y) ** 2) - (self.links[1].LENGTH ** 2) - (self.links[2].LENGTH ** 2)) / (2 * self.links[1].LENGTH * self.links[2].LENGTH)
+        # sin_theta3a = math.sqrt(1 - (cos_theta3 ** 2))
+        # sin_theta3b = -1 * math.sqrt(1 - (cos_theta3 ** 2))
+
+        # theta3a = math.atan2(sin_theta3a, cos_theta3)
+        # theta3b = math.atan2(sin_theta3b, cos_theta3)
+        # theta2a = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3a, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
+        # theta2b = math.atan2(buf_target_y, buf_target_x) - math.atan2(self.links[2].LENGTH * sin_theta3b, self.links[1].LENGTH + (self.links[2].LENGTH * cos_theta3))
+            
+        # solution = solution + [[theta1, theta2a, theta3a], [theta1, theta2b, theta3b]]    
+        solution = solution + [[theta1, 0, 0], [theta1, 0, 0]]    
+
+        # Sorted according to which solution move joint the least (from current config)
+        solution = sorted(solution, key = lambda sol: abs(sol[0] - self.links[0].angle) + abs(sol[1] - self.links[1].angle) + abs(sol[2] - self.links[2].angle))
+        
+        return solution
+
+    # TODO: Calculate inverse kinematic (Newton-Raphson's method) <-- Should be better than above
     
 
 
