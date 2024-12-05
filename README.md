@@ -24,6 +24,7 @@
 
 ## **ทบทวนวรรณกรรมและทฤษฎีที่เกี่ยวข้อง**
 
+
 ## **วิธีการดำเนินงาน**
 ## **โปรดลง Library พวกนี้ก่อนรัน**
   - numpy
@@ -36,8 +37,18 @@
   - pip install math
   - pip install pygame
 ```
-**Clone 
+**Clone Project**
+ใช้ Command นี้
+```bash
+  - gh repo clone Kantapatlao/FRA333_Project
+```
 
 ## **ผลการทดลอง**
 ## **สรุปและวิเคราะห์ผล**
 
+## **เอกสารอ้างอิง**
+Recent advance in Rapidly – Exploring random tree: A review
+https://www.sciencedirect.com/science/article/pii/S2405844024084822
+
+A Systematic Literature Review of A* Pathfinding
+https://www.sciencedirect.com/science/article/pii/S1877050921000399
