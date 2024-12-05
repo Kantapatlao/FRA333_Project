@@ -35,10 +35,10 @@ def main():
     map2img(screen, np_map, 100, 100)
 
     A = A_Star()
-    A.compute_path(150, 150, the_map, Robot)
+    path = A.compute_path(150, 150, the_map, Robot)
 
     Robot.draw_robot(screen, R_const.ROBOT_COORDINATE_X, R_const.ROBOT_COORDINATE_Y)
-    # pygame.draw.circle(screen, (255,0,0), (bX * 10 + 100, (bY * 10) + 100), radius=3)
+    pygame.draw.circle(screen, (255,0,0), (15 * 10 + 100, (15 * 10) + 100), radius=3)
 
     
 

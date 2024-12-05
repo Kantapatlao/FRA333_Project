@@ -148,7 +148,6 @@ class A_Star:
             
         # Keep expanding node
         iter_count = 0
-        best_goal = None
 
         while True:
 
@@ -187,6 +186,56 @@ class A_Star:
                     
 
         # Reconstruct path
+        iter_count = 0
+
+        self.solution.append(cheapest_node)
+
+        while True:
+
+            # Prevent runaway loop
+            iter_count = iter_count + 1
+
+            if iter_count > MAX_ITER:
+                raise RuntimeError("Max iteration reached.")
+            
+            parent = self.solution[0].parent
+            if parent is None:
+
+                break
+            
+            self.solution.insert(0, parent)
+
+        # Move from discrete map node to real target coordinate
+        IK_solution = robot_input.sequencial_IK_3(goal_x, goal_y)
+        possible_solution = []
+        for sol in IK_solution:
+
+            robot_input.forward_kinematic(sol)
+
+            if robot_input.check_wall_collision(R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y, R_const.MAP_SIZE_X, R_const.MAP_SIZE_Y) == False:
+                if robot_input.check_object_collision(map_input.list_obstacle()) == False:
+                    
+                    possible_solution.append(sol)
+
+        if len(possible_solution) == 0:
+            raise RuntimeError("All config collide with wall/obstacle.")
+        
+
+        # Construct final node
+        cheapest_node = self.solution[-1]
+        final_node = self._A_Star_Node(self.solution[-1],
+                                       possible_solution[0],
+                                       goal_map_node,
+                                       _calculate_cost(cheapest_node.joint_sol, sol) + cheapest_node.cost, 
+                                       math.dist(
+                                       (robot_input.links[-1].end_positionX, robot_input.links[-1].end_positionY),
+                                                                (goal_x, goal_y))
+                                       )
+        
+        self.solution.append(final_node)
+
+        return self.solution
+
         
         
 
