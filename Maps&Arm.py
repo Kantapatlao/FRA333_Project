@@ -103,7 +103,7 @@ class RobotArm:
 
             # Combine angles for both configurations
             theta1 = base_angle
-            theta2 = remaining_angle - angle2  # Elbow-up
+            theta2 = remaining_angle - angle2 - theta1  # Elbow-up
             theta3 = math.pi - angle3  # Adjust for elbow-up
 
             return [theta1, theta2, theta3]
