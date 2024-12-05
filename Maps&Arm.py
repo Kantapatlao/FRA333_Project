@@ -72,26 +72,47 @@ class RobotArm:
             x, y = target[0] - self.origin[0], self.origin[1] - target[1]
             d = math.sqrt(x**2 + y**2)
             max_reach = sum(self.link_lengths)
-            min_reach = abs(self.link_lengths[0] - self.link_lengths[1])
+            min_reach = abs(self.link_lengths[0] - (self.link_lengths[1] + self.link_lengths[2]))
 
+            # Check if the target is reachable
             if d > max_reach or d < min_reach:
                 return None
 
-            angle1 = math.atan2(y, x)
+            # Base angle
+            base_angle = math.atan2(y, x)
+
+            # Adjust for first link
+            remaining_x = x - self.link_lengths[0] * math.cos(base_angle)
+            remaining_y = y - self.link_lengths[0] * math.sin(base_angle)
+            remaining_d = math.sqrt(remaining_x**2 + remaining_y**2)
+
+            if remaining_d > self.link_lengths[1] + self.link_lengths[2]:
+                return None  # Remaining target out of reach
+
+            # Safe acos
             def safe_acos(value):
                 return math.acos(max(min(value, 1), -1))
 
-            cos_theta = (self.link_lengths[0]**2 + d**2 - self.link_lengths[1]**2) / (2 * self.link_lengths[0] * d)
-            angle2 = safe_acos(cos_theta)
+            # Recalculate angles
+            remaining_angle = math.atan2(remaining_y, remaining_x)
+            cos_theta2 = (self.link_lengths[1]**2 + remaining_d**2 - self.link_lengths[2]**2) / (2 * self.link_lengths[1] * remaining_d)
+            angle2 = safe_acos(cos_theta2)
 
-            cos_theta2 = (self.link_lengths[0]**2 + self.link_lengths[1]**2 - d**2) / (2 * self.link_lengths[0] * self.link_lengths[1])
-            angle3 = math.pi - safe_acos(cos_theta2)
+            cos_theta3 = (self.link_lengths[1]**2 + self.link_lengths[2]**2 - remaining_d**2) / (2 * self.link_lengths[1] * self.link_lengths[2])
+            angle3 = safe_acos(cos_theta3)
 
-            return [angle1, angle2, angle3]
+            # Combine angles for both configurations
+            theta1 = base_angle
+            theta2 = remaining_angle - angle2  # Elbow-up
+            theta3 = math.pi - angle3  # Adjust for elbow-up
+
+            return [theta1, theta2, theta3]
+
         except Exception as e:
             print(f"IK Error: {e}")
             return None
 
+        
     def get_joint_positions(self):
         joints = [self.origin]
         x, y = self.origin
