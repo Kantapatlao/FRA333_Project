@@ -127,7 +127,7 @@ class A_Star:
 
         # Find best config to reach first node
         start_point_node = self._A_Star_Node( None,
-                                              None,
+                                              start_config,
                                               start_map_node,
                                               0, 
                                               math.dist((goal_x, goal_y),(start_x, start_y))
@@ -240,21 +240,6 @@ class A_Star:
         
 
 
-                
-
-         
-         
-                
-        
-
-        
-
-
-    def show_path(self):
-
-
-
-        pass
 
 
     

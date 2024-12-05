@@ -44,7 +44,7 @@ class RobotArm:
         
         # Check input type
         if type(joint) is not list:
-            raise TypeError("link_len only take list of int (integer) as input.")
+            raise TypeError("link_len only take list of real number as input.")
         
         if len(joint) != len(self.links):
             raise ValueError(f"input joint count doesn't match object's joint count. Object has {len(self.links)} joint.",)
