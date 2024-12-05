@@ -26,7 +26,7 @@ def main():
 
     # Initialized Robot arm object
     Robot = RobotArm([180,180,180])
-    Robot.forward_kinematic([3.14/4,0,0])
+    # Robot.forward_kinematic([3.14/4,0,0])
     Robot.set_base_position(100,600)
     screen.fill((255,255,255))
     map2img(screen, np_map, 100, 100)
@@ -39,13 +39,13 @@ def main():
     the_node = the_node.scale_discrete_map(R_const.SCALING, R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y)
 
     sol = Robot.sequencial_IK_3(bX * 10, bY * 10)
-
-    pygame.draw.rect(screen, (150,100,0), ((the_node.posX, the_node.posY),(the_node.sizeX, the_node.sizeY)))
-    pygame.draw.circle(screen, (255,0,0), (bX * 10 + 100, (bY * 10) + 100), radius=3)
-
     Robot.forward_kinematic(sol[0])
 
+    pygame.draw.rect(screen, (150,100,0), ((the_node.posX, the_node.posY),(the_node.sizeX, the_node.sizeY)))
     Robot.draw_robot(screen, R_const.ROBOT_COORDINATE_X, R_const.ROBOT_COORDINATE_Y)
+    pygame.draw.circle(screen, (255,0,0), (bX * 10 + 100, (bY * 10) + 100), radius=3)
+
+    
 
     running = True
 
