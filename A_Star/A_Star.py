@@ -123,10 +123,10 @@ class A_Star:
                                                     ))
             
         # Sorted graph_path according to evaluation function: cost + heuristic
+        self.graph_path = sorted(self.graph_path, key=lambda obj: obj.cost + obj.heuristic)
+
         
-        
-    
-        # Do A* search
+        # Keep expanding node
         iter_count = 0
         best_goal = None
 
@@ -144,6 +144,7 @@ class A_Star:
                 
                 # Check if the goal is the best one
                 if self.graph_path[0] == best_goal:
+                    print("Eureka")
                     return self.solution
                 
                 else:
@@ -153,12 +154,23 @@ class A_Star:
             nearby_node = map_input.find_adjacent_node(self.graph_path[0].map_node)
             last_joint_config = self.graph_path[0].parent_sol
 
+            for node in nearby_node:
+
+                for sol in _find_config(node):
+                    robot_input.forward_kinematic(sol)
+                    self.graph_path.append(self._A_Star_Node( self.graph_path[0],
+                                                              sol,
+                                                              node,
+                                                              _calculate_cost(last_joint_config, sol) + self.graph_path[0].cost, 
+                                                              math.dist(
+                                                                (robot_input.links[-1].end_positionX, robot_input.links[-1].end_positionY),
+                                                                (goal_x, goal_y))
+                                                            ))
+
             # Find best config reach next node
-            
+            self.graph_path = sorted(self.graph_path, key=lambda obj: obj.cost + obj.heuristic)
                 
 
-            # Calculate cheapest node
-            # nearby_node 
          
          
                 
