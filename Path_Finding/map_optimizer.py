@@ -36,6 +36,17 @@ class Discrete_map:
     def get_bottom_right_pos(self):
 
         return (self.posX + self.sizeX - 1, self.posY + self.sizeY - 1)
+    
+    # Scale map to match pygame's coordinate
+    def scale_discrete_map(self, scale, x_offset, y_offset):
+
+        return Discrete_map(self.value,
+                            self.posX * scale + x_offset,
+                            self.posY * scale + y_offset,
+                            self.sizeX * scale,
+                            self.sizeY * scale)
+
+
 
 
 class Map:
@@ -72,6 +83,8 @@ class Map:
         self.full_map = in_map
         self.tree_map = self.__map_discretizer_engine(BT_Node(self.full_map, 0, 0))
         self.optimized_map = self.__graph_dump_engine()
+        self.obstacle_list = []
+
 
         # Since __map_collapser() can't garantee fully collapsed map in one iteration
         
@@ -94,7 +107,10 @@ class Map:
 
             collapse_iter = collapse_iter + 1 
 
-        
+        # List obstacle
+        for node in self.optimized_map:
+            if node.value == 1:
+                self.obstacle_list.append(node)
         return None
                 
         
@@ -314,6 +330,15 @@ class Map:
         
         raise RuntimeError(f"Can't find nearest node to {x,y} coordinate.")
     
+    # List obstacle in map
+    def list_obstacle(self):
+        obstacle_list = []
+        for n in self.optimized_map:
+            if n.value == 1:
+                obstacle_list.append(n)
+    
+        return obstacle_list
+
     # Show content in graph_map
     def show_graph(self):
 

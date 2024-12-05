@@ -3,7 +3,8 @@ import os
 import numpy as np
 
 import pygame
-from Path_Finding.map_optimizer import Map
+from Path_Finding.map_optimizer import Discrete_map, Map
+import RobotARM.constant as R_const
 from RobotARM.robot import RobotArm
 from Map_Utils.visualize_map import map2img
 
@@ -11,8 +12,6 @@ from Map_Utils.visualize_map import map2img
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 
-ROBOT_COORDINATE_X = 100
-ROBOT_COORDINATE_Y = 600
 MAP_PATH = os.path.join(os.path.abspath("Map"), 'map1.npy')
 
 def main():
@@ -27,20 +26,25 @@ def main():
 
     # Initialized Robot arm object
     Robot = RobotArm([180,180,180])
-    Robot.forward_kinematic([3.14/4,3.14/4,3.14/4])
-    Robot.check_object_collision(the_map.optimized_map)
+    Robot.forward_kinematic([3.14/4,0,0])
+    Robot.set_base_position(100,600)
+    print(Robot.check_object_collision(the_map.obstacle_list))
+
     screen.fill((255,255,255))
     map2img(screen, np_map, 100, 100)
-    # Robot.draw_robot(screen, ROBOT_COORDINATE_X, ROBOT_COORDINATE_Y)
+
+    # TODO: Resolve this
     import random
     bX, bY = random.randint(0,50), random.randint(0,50)
     print(f"Random target: {bX, bY}")
-
     the_node = the_map.find_nearest_node(bX, bY)
+    the_node = the_node.scale_discrete_map(R_const.SCALING, R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y)
 
-    pygame.draw.rect(screen, (150,150,0), ((the_node.posX * 10 + 100, the_node.posY * 10 + 100),(the_node.sizeX * 10 , the_node.sizeY * 10)))
+    pygame.draw.rect(screen, (150,150,0), ((the_node.posX, the_node.posY),(the_node.sizeX, the_node.sizeY)))
     pygame.draw.circle(screen, (255,0,0), (bX * 10 + 100, (bY * 10) + 100), radius=3)
 
+
+    Robot.draw_robot(screen, R_const.ROBOT_COORDINATE_X, R_const.ROBOT_COORDINATE_Y)
 
     running = True
 

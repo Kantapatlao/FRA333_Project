@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import pygame
+import RobotARM.constant as R_const
 from Path_Finding.map_optimizer import Discrete_map
 
 # Declare Robot arm object
@@ -31,6 +32,11 @@ class RobotArm:
         
         self.base_position = None
         self.links = [self._joint(l) for l in link_len]
+
+
+    # Set base position
+    def set_base_position(self, base_x, base_y):
+        self.base_position = (base_x, base_y)
 
 
     # Calculate forward kinematic
@@ -137,7 +143,73 @@ class RobotArm:
         
         for i, o in enumerate(obstacle_list):
             if type(o) is not Discrete_map:
-                raise TypeError(f"obstacle {i} is not Discrete_map object")
+                raise TypeError(f"obstacle {i} is not Discrete_map object.")
+            
+        if self.base_position is None:
+            raise ValueError("base_position isn't assigned yet.")    
+
+        # Check if a single line collide with a square
+        # line_start: (line start position x, line start position y)
+        # line_end: (line end position x, line end position y)
+        # rectangle: discrete map object
+        def _check_line_rectangle_collide(line_start, line_end, rectangle):
+            
+            # No need to check type since this is should only be called by check_object_collision
+
+            # Scale/remap to pygame's coordinate
+            rectangle = rectangle.scale_discrete_map(R_const.SCALING, R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y)
+            
+            # Get the line's inclination(m) and starting point(b) to calculate contact point
+            line_m = (line_end[1] - line_start[1]) / (line_end[0] - line_start[0])
+            line_b = line_start[1] - (line_m*line_start[0])
+
+            # Check if line collide with rectangle's left edge
+            rect_edge = rectangle.posX
+            if line_start[0] <= rect_edge and line_end[0] >= rect_edge:
+                contact_point = (line_m*rect_edge) + line_b
+                if contact_point >= rectangle.posY and contact_point <= rectangle.posY + rectangle.sizeY:
+                    return True
+
+
+            # Check if line collide with rectangle's right edge
+            rect_edge = rectangle.posX + rectangle.sizeX - 1
+            if line_start[0] <= rect_edge and line_end[0] >= rect_edge:
+                contact_point = (line_m*rect_edge) + line_b
+                if contact_point >= rectangle.posY and contact_point <= rectangle.posY + rectangle.sizeY:
+                    return True
+
+            # Check if line collide with rectangle's top edge
+            rect_edge = rectangle.posY
+            if line_start[1] <= rect_edge and line_end[1] >= rect_edge:
+                contact_point = (rect_edge - line_b) / line_m
+                if contact_point >= rectangle.posX and contact_point <= rectangle.posX + rectangle.sizeX:
+                    return True
+
+            # Check if line collide with rectangle's bottom edge
+            rect_edge = rectangle.posY + rectangle.sizeY - 1
+            if line_start[1] <= rect_edge and line_end[1] >= rect_edge:
+                contact_point = (rect_edge - line_b) / line_m
+                if contact_point >= rectangle.posX and contact_point <= rectangle.posX + rectangle.sizeX:
+                    return True
+
+            return False
+        
+        # Check link 1
+        for ob in obstacle_list:
+            if _check_line_rectangle_collide((self.base_position[0], self.base_position[1]),
+                                         (self.links[0].end_positionX + self.base_position[0], self.base_position[1] - self.links[0].end_positionY),
+                                         ob):
+                return True
+            
+        # Check link 2..
+        for ilink in range(1,len(self.links)):
+            for ob in obstacle_list:
+                if _check_line_rectangle_collide((self.links[ilink-1].end_positionX + self.base_position[0], self.base_position[1] - self.links[ilink-1].end_positionY),
+                                                 (self.links[ilink].end_positionX + self.base_position[0], self.base_position[1] - self.links[ilink].end_positionY),
+                                                  ob):
+                    return True
+        
+        return False
     
     # Draw Robot
     def draw_robot(self, pygame_screen, base_x=None, base_y=None):
@@ -167,6 +239,12 @@ class RobotArm:
                         width=5
                         )
 
+        pygame.draw.circle(pygame_screen,
+                        (0,0,255),
+                        (self.base_position[0], self.base_position[1]),
+                        radius=5)
+        
+        
         for i in range(1, len(self.links)):
             pygame.draw.line(pygame_screen,
                             (0,255,0), 
@@ -174,6 +252,11 @@ class RobotArm:
                             (self.links[i].end_positionX + self.base_position[0], self.base_position[1] - self.links[i].end_positionY),
                             width=5
                             )
+            
+            pygame.draw.circle(pygame_screen,
+                            (0,0,255),
+                            (self.links[i-1].end_positionX + self.base_position[0], self.base_position[1] - self.links[i-1].end_positionY),
+                            radius=5)
             
         return None
     
