@@ -13,8 +13,7 @@ class A_Star:
         def __init__(self, parent, sol, map_node, cost, heuristic):
 
             self.parent = parent
-            self.parent_sol = sol
-            self.sol_no = 0
+            self.joint_sol = sol
             self.map_node = map_node
 
             # Cost: How much joint angle changes
@@ -26,7 +25,8 @@ class A_Star:
     def __init__(self):
 
         self.graph_path = []
-        self.end_node = []
+        self.evaluated_node = []
+        self.queue = []
         self.solution = []
 
 
@@ -56,6 +56,20 @@ class A_Star:
         def _calculate_cost(last_conf, now_conf):
 
             return sum([abs(n-l) for n,l in zip(now_conf, last_conf)])
+        
+
+        # Function to find cheapest node
+        def _find_cheapest_node(queue):
+
+            if len(queue) < 1:
+                return queue[0]
+
+            cheapest_node = queue[0]
+            for n in queue[1:]:
+                if n.cost + n.heuristic < cheapest_node.cost + cheapest_node.heuristic:
+                    cheapest_node = n
+
+            return cheapest_node
 
 
 
@@ -87,13 +101,13 @@ class A_Star:
         start_config = [q.angle for q in robot_input.links]
 
         # Find nearest node
-        start_node = map_input.find_nearest_node(math.floor(start_x / R_const.SCALING), math.floor(start_y / R_const.SCALING))
+        start_map_node = map_input.find_nearest_node(math.floor(start_x / R_const.SCALING), math.floor(start_y / R_const.SCALING))
 
         # Find goal node
-        goal_node = map_input.find_nearest_node(math.floor(goal_x / R_const.SCALING), math.floor(goal_y / R_const.SCALING))
+        goal_map_node = map_input.find_nearest_node(math.floor(goal_x / R_const.SCALING), math.floor(goal_y / R_const.SCALING))
 
         # If node is the same
-        if start_node == goal_node:
+        if start_map_node == goal_map_node:
             IK_solution = robot_input.sequencial_IK_3(goal_x, goal_y)
             possible_solution = []
             for sol in IK_solution:
@@ -112,20 +126,26 @@ class A_Star:
             return possible_solution[0]
 
         # Find best config to reach first node
-        for sol in _find_config(start_node):
+        start_point_node = self._A_Star_Node( None,
+                                              None,
+                                              start_map_node,
+                                              0, 
+                                              math.dist((goal_x, goal_y),(start_x, start_y))
+                                              )
+        
+        self.evaluated_node.append(start_point_node)
+        
+        # Expand start node
+        for sol in _find_config(start_map_node):
             robot_input.forward_kinematic(sol)
-            self.graph_path.append(self._A_Star_Node( None,
-                                                      sol,
-                                                      start_node,
-                                                      _calculate_cost(start_config, sol), 
-                                                      math.dist((robot_input.links[-1].end_positionX, robot_input.links[-1].end_positionY),
-                                                                (goal_x, goal_y))
+            self.queue.append(self._A_Star_Node(start_point_node,
+                                                        sol,
+                                                        start_map_node,
+                                                        _calculate_cost(start_config, sol), 
+                                                        math.dist((robot_input.links[-1].end_positionX, robot_input.links[-1].end_positionY),
+                                                                  (goal_x, goal_y))
                                                     ))
             
-        # Sorted graph_path according to evaluation function: cost + heuristic
-        self.graph_path = sorted(self.graph_path, key=lambda obj: obj.cost + obj.heuristic)
-
-        
         # Keep expanding node
         iter_count = 0
         best_goal = None
@@ -140,35 +160,37 @@ class A_Star:
                 raise RuntimeError("Maximum iteration reached.")
             
             # Check if goal is reached
-            if self.graph_path[0].map_node == goal_node:
+            cheapest_node = _find_cheapest_node(self.queue)
+            if cheapest_node.map_node == goal_map_node:
                 
-                # Check if the goal is the best one
-                if self.graph_path[0] == best_goal:
-                    print("Eureka")
-                    return self.solution
-                
-                else:
-                    best_goal = self.graph_path[0]
+                break
             
-            # Expand all node & all solution
-            nearby_node = map_input.find_adjacent_node(self.graph_path[0].map_node)
-            last_joint_config = self.graph_path[0].parent_sol
+            self.queue.remove(cheapest_node)
+            self.evaluated_node.append(cheapest_node)
+
+            # Expand all node from cheapest_node
+            nearby_node = map_input.find_adjacent_node(cheapest_node.map_node)
+            last_joint_config = cheapest_node.joint_sol
 
             for node in nearby_node:
 
                 for sol in _find_config(node):
                     robot_input.forward_kinematic(sol)
-                    self.graph_path.append(self._A_Star_Node( self.graph_path[0],
+                    self.queue.append(self._A_Star_Node( cheapest_node,
                                                               sol,
                                                               node,
-                                                              _calculate_cost(last_joint_config, sol) + self.graph_path[0].cost, 
+                                                              _calculate_cost(last_joint_config, sol) + cheapest_node.cost, 
                                                               math.dist(
                                                                 (robot_input.links[-1].end_positionX, robot_input.links[-1].end_positionY),
                                                                 (goal_x, goal_y))
                                                             ))
+                    
 
-            # Find best config reach next node
-            self.graph_path = sorted(self.graph_path, key=lambda obj: obj.cost + obj.heuristic)
+        # Reconstruct path
+        
+        
+
+
                 
 
          
