@@ -76,9 +76,6 @@ class RobotArm:
 
         return [(self.links[i].end_positionX, self.links[i].end_positionY) for i in range(len(self.links))]
 
-        
-
-                
     # Calculate inverse kinematic (Sequencial inverse kinematic)
     def sequencial_IK_3(self, in_x, in_y):
 

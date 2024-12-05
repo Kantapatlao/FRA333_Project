@@ -15,65 +15,46 @@ SCREEN_HEIGHT = 720
 MAP_PATH = os.path.join(os.path.abspath("Map"), 'map1.npy')
 
 def main():
-    # Initialize Pygame and screen
+
+    # Initialized each module
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Robot Arm Collision Detection")
 
-    # Load map
+    # Initialized Map system
     np_map = np.load(MAP_PATH, allow_pickle=False)
     the_map = Map(np_map)
 
-    # Create Robot Arm
+    # Initialized Robot arm object
     Robot = RobotArm([180,180,180])
-    Robot.set_base_position(100, 600)
-
-    # Fill screen with white
+    # Robot.forward_kinematic([3.14/4,0,0])
+    Robot.set_base_position(100,600)
     screen.fill((255,255,255))
-    
-    # Draw map
     map2img(screen, np_map, 100, 100)
 
-    # Demonstrate wall collision check
-    map_boundary = {
-        'x': 100,     # map start x
-        'y': 100,     # map start y
-        'width': 500, # map width
-        'height': 500 # map height
-    }
-    
-    wall_collision = Robot.check_wall_collision(
-        map_boundary['x'], 
-        map_boundary['y'], 
-        map_boundary['width'], 
-        map_boundary['height']
-    )
-    print(f"Wall Collision: {wall_collision}")
+    # TODO: Resolve this
+    import random
+    bX = random.randint(0,50)
+    bY = abs(bX - random.randint(0,25))
+    print(f"Random target: {bX, bY}")
+    the_node = the_map.find_nearest_node(bX, bY)
+    the_node = the_node.scale_discrete_map(R_const.SCALING, R_const.MAP_COORDINATE_X, R_const.MAP_COORDINATE_Y)
 
-    # Prepare obstacles for object collision check
-    # Convert map obstacles to Discrete_map objects
-    obstacles = []
-    for y in range(np_map.shape[0]):
-        for x in range(np_map.shape[1]):
-            if np_map[y, x] == 1:  # Assuming 1 represents obstacles
-                obstacle = Discrete_map(x, y, 1, 1, 1)
-                obstacles.append(obstacle)
+    sol = Robot.sequencial_IK_3(bX * 10, bY * 10)
+    Robot.forward_kinematic(sol[0])
 
-    # Demonstrate object collision check
-    object_collision = Robot.check_object_collision(obstacles)
-    print(f"Object Collision: {object_collision}")
+    pygame.draw.rect(screen, (150,100,0), ((the_node.posX, the_node.posY),(the_node.sizeX, the_node.sizeY)))
+    Robot.draw_robot(screen, R_const.ROBOT_COORDINATE_X, R_const.ROBOT_COORDINATE_Y)
+    pygame.draw.circle(screen, (255,0,0), (bX * 10 + 100, (bY * 10) + 100), radius=3)
 
-    # Visualization (optional)
-    if wall_collision or object_collision:
-        pygame.draw.rect(screen, (255, 0, 0), 
-                         ((map_boundary['x'], map_boundary['y']), 
-                          (map_boundary['width'], map_boundary['height'])), 
-                         2)  # Red boundary if collision detected
-
-    # Main game loop
     running = True
+
     while running:
+
+        # if Robot.check_wall_collision(100,100,500,500):
+        #     pygame.draw.rect(screen, (255,0,0), ((1000,100),(1100,200)))
+
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
                 running = False
 
