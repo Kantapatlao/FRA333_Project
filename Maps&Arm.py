@@ -201,20 +201,20 @@ def main():
             robot.angles = current_angles
             
             # Check if target is reached
-            if math.dist(end_effector, target) < 5:
-                current_time = pygame.time.get_ticks()
-                if current_time - target_reached_time >= target_pause_duration:
-                    # Generate new target after pause
-                    target = generate_random_target(origin, new_width, new_height, Link_Lengths)
-                    robot.set_target(target)
-                    target_reached_time = current_time
-            else:
-                target_reached_time = 0
+            # if math.dist(end_effector, target) < 5:
+            #     current_time = pygame.time.get_ticks()
+            #     if current_time - target_reached_time >= target_pause_duration:
+            #         # Generate new target after pause
+            #         target = generate_random_target(origin, new_width, new_height, Link_Lengths)
+            #         robot.set_target(target)
+            #         target_reached_time = current_time
+            # else:
+            #     target_reached_time = 0
         else:
             # Generate new target if current is unreachable
             target = generate_random_target(origin, new_width, new_height, Link_Lengths)
             robot.set_target(target)
-        
+   
         # Draw robot and target
         robot.draw(screen)
         pygame.draw.circle(screen, red, target, 5)
@@ -222,7 +222,10 @@ def main():
         # Update display
         pygame.display.flip()
         clock.tick(FPS)
-    
+    print(target_angles)
+    print(current_angles)
+    print(target)
+    print(end_effector)
     pygame.quit()
 
 if __name__ == "__main__":
