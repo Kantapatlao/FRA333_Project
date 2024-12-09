@@ -6,7 +6,7 @@
 ## Table of Contents
 - [จุดประสงค์โครงการ](#จุดประสงค์โครงการ)
 - [ทบทวนวรรณกรรมและทฤษฎีที่เกี่ยวข้อง](#ทบทวนวรรณกรรมและทฤษฎีที่เกี่ยวข้อง)
-- [การใช้งาน Program](#การใช้งาน_Program)
+- [การใช้งานโปรแกรม](#การใช้งานโปรแกรม)
 - [ผลการทดลอง](#ผลการทดลอง)
 - [สรุปและวิเคราะห์ผล](#สรุปและวิเคราะห์ผล)
 - [เอกสารอ้างอิง](#เอกสารอ้างอิง)
@@ -46,7 +46,7 @@
 ```bash
   - gh repo clone Kantapatlao/FRA333_Project
 ```
-## **การใช้งาน Program**
+## **การใช้งานโปรแกรม**
 **Map Generator & Optimization**
 
 1) เมื่อดาวโหลดไฟล์ต่างๆ มาแล้วให้ไปที่โฟลเดอร์ Map_Ultils ---> map_generator.ipynb แล้วรัยโปรแกรมเพื่อสร้างแผนที่ออกมาก่อน
@@ -54,6 +54,22 @@
 3) 
 
 ## **ผลการทดลอง**
+**Examples : Map1.npy**
+[Watch the video](D:\ปี3\MLwithju\ML_project\20241209-0339-49.7498429.mp4)
+The simulation begins with the robot arm in its home position and a known target point. The inverse kinematics approach is used to calculate the joint (q) values required to move the robot arm to the target position.
+
+***Examples : Out of Reach**
+
+pic ture 2"D:ปี3\MLwithju\results\2 out of reach.png"
+
+**Examples : Spawn On Obstacle**
+pic ture 3"D:ปี3\MLwithju\results\3"
+
+**การตรวจสอบความถูกต้อง : Map1.npy**
+สำหรับการตรวจสอบความถูกต้อง เราสามารถแสดงผลลัพธ์ได้โดยใช้ทั้ Forward kinematic และ Inverse kinematics ของแขนหุ่นยนต์ เพื่อคำนวณและตรวจสอบตำแหน่งเป้าหมาย
+
+**การตรวจสอบความถูกต้อง : Calculate About Target**
+สำหรับการตรวจสอบความถูกต้อง เราสามารถแสดงผลลัพธ์โดยใช้ทั้งการคำนวณ Forward kinematic และ Inverse kinematics ของแขนหุ่นยนต์เพื่อคำนวณและยืนยันตำแหน่งเป้าหมาย
 
 ## **สรุปและวิเคราะห์ผล**
 
