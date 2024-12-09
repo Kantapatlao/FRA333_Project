@@ -71,8 +71,8 @@ Discrete map: เป็นคลาสที่ใช้เก็บข้อม
   - get-bottonm_right_pos(): ส่งคืนค่าตำแหน่งมุมขวาล่างของ Discrete map
   - scale_discrete_map: ส่งคือ discrete map ใไม่ที่ปรับขนาดตามค่าที่กำหนด
 Map: เป็นคลาสที่นำข้อมูลแผนที่แบบกริดมาแปลงเป็น Discrete map ประกอบไปด้วย
-  - find_adjacent_node():
-  - find_nearest_node():
+  - find_adjacent_node():รับข้อมูลจาก Discrete map มาแล้วส่งคืนแมพที่ ขอบบน, ล่าง, ขวา, ซ้ายติดกัน 
+  - find_nearest_node(): 
   - list_obstacle():
   - show_graph():
 
