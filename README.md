@@ -60,11 +60,34 @@
   - gh repo clone Kantapatlao/FRA333_Project
 ```
 ## **การใช้งานโปรแกรม**
-**Map Generator & Optimization**
+**ไฟล์ map_generator.ipynb**
 
-1) เมื่อดาวโหลดไฟล์ต่างๆ มาแล้วให้ไปที่โฟลเดอร์ Map_Ultils ---> map_generator.ipynb แล้วรัยโปรแกรมเพื่อสร้างแผนที่ออกมาก่อน
-2) รันไฟล์ map_optimizer.py เพื่อปรับขนาดและสร้าง Node สำหรับการทำ Searching Algorithm
-3) 
+make_map(): สร้างแผนที่แบบกริดในรูปแบบ ndarray ของ numpy จากขนาดแผนที่และจำนวนสิ่งกีดขวางที่กำหนด โดยที่สิ่งกีดขวางจะมีค่าเป็น 1 และเส้นทางที่สามารถเดินได้จะมีค่าเป็น 0
+
+**ไฟล์ map_optimizer.py**
+
+Discrete map: เป็นคลาสที่ใช้เก็บข้อมูลของแผนที่ในรูปแบบของตำแหน่ง X,Y ขนาดของแผนที่และสถานะของตำแน่งนั้นว่าเป็นสิ่งกีดขวางหรือไม่ประกอบไปด้วย
+  - get_center_pos(): ส่งคืนค่าตำแหน่งศูนย์กลางของ Discrete map
+  - get-bottonm_right_pos(): ส่งคืนค่าตำแหน่งมุมขวาล่างของ Discrete map
+  - scale_discrete_map: ส่งคือ discrete map ใไม่ที่ปรับขนาดตามค่าที่กำหนด
+Map: เป็นคลาสที่นำข้อมูลแผนที่แบบกริดมาแปลงเป็น Discrete map ประกอบไปด้วย
+  - find_adjacent_node():
+  - find_nearest_node():
+  - list_obstacle():
+  - show_graph():
+
+**ไฟล์ robot.py**
+
+Robot: คลาสที่เป็บข้อมูลของข้อต่อ, ความยาวของก้าน และตำแหน่งฐาน ประกอบไปด้วย
+  - set_base_position():
+  - forward_kinematic():
+  - sequencial_IK_3():
+  - check_wall_collision():
+  - check_object_collision():
+  - draw_robot():
+
+**ไฟล์ A_Star.py**
+_A_Star_Node: เป็นคลาสสำหรับใช้คำนวน A* ที่ใช้สำหรับประกาศก่อนใช้งาน
 
 ## **ผลการทดลอง**
 **Examples : Map1.npy**
