@@ -40,7 +40,7 @@ map = make_map(50, 50, 3)
 **RETURN_VALUE**\
 2D numpy.ndarray with size as specify by sizeX and sizeY. Available path is label as 0 and obstable label as 1.
 
-**DIAGNOSTICS**\
+**DIAGNOSTICS**
 - `<input variable> only take positive integer as input.`
 Input isn't the same type as what the function accept. Refer in PARAMETER topic. The function doesn't automatically type cast any variable, so floating point without decimal point isn't accept as well.
 

@@ -100,4 +100,3 @@ Loop count when searching map has reach maximum limit. This limit is just to pre
 
 **BUGS**
 - Due to how sequencial_IK_3 work, which only give out 4 solutions, all 4 solution may collide with wall or obstacle which cause the search to fail. 
-- Unknown bug when checking if target position is reachable or not, (compute each link length whether fully extending or fully retract can reach specify position or not.) Initial suspection is miscalculate when transforming frame between robot's and map's.

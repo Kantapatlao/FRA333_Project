@@ -1,102 +1,343 @@
-# A_Star.py
-**Object in A_Star.py file**
-- A_Star object
-    - compute_path
+# robot.py
+**Object in robot.py file**
+- Robot
+    - set_base_position
+    - forward_kinematic
+    - sequencial_IK_3
+    - check_wall_collision
+    - check_object_collision
+    - draw_robot
 
 **Dependency package**
 - math
+- numpy
+- pygame
 - RobotARM.constant
-- RobotARM.robot
 - Path_Finding.map_optimizer
 
 
-## A_star object
+## RobotArm
 
 **NAME:** \
-A_Star
+RobotArm
 
 **TYPE:**\
 Custom object
 
 **SYNOPSIS:** 
 ```
-A_Star()
+RobotArm()
 ```
 
 **DESCRIPTION**\
-Initialized an empty object to hold data structure for later use in function compute_path. Data structure should be empty before computing path. No need to assign any value to object's attribute.
+Create a RobotArm object which hold robot link object and the base position. Each link object is a private object to RobotArm. Initial angle of each link is set to 0 by default.
+
+**ATTRIBUTE**
+- base_position: A tuple of base position of the Robot.
+- links: A list of link object. Each contain:
+    - LENGTH: Length of respected link object. Value should be constant.
+    - angle: Current angle (in radian) at the beginning of the joint relative to previous joint/base. 
+    - end_positionX: X coordinate of the end of the link.
+    - end_positionY: Y coordinate of the end of the link.
+
+
+**PARAMETER**
+- link_len: List of length of each link, from base to end effector. **Only takes list of unsigned integers as input.**
 
 **OPTIONS**\
 NONE
 
 **EXAMPLES**
 ```
-foo = A_Star()
+R = RobotArm([200, 200, 200])
 ```
 
 **RETURN_VALUE**\
-An empty A_Star object. This function shouldn't failed.
+A RobotArm object.
 
-**DIAGNOSTICS**\
-NONE
+**DIAGNOSTICS**
+- `link_len only take list of int (integer) as input.`
+- `<number> element of link_len is not integer.`
+- `<number> element of link_len can not be negative or zero.`\
+link_len isn't the same type as what the function accept. Refer in PARAMETER topic. The function doesn't automatically type cast any variable, so floating point without decimal point isn't accept as well.
 
 **BUGS**\
 NONE
 
-## compute_path()
+## set_base_position
 
 **NAME:** \
-A_Star
+set_base_position
 
 **TYPE:**\
-A_Star's method
+RobotArm's method
 
 **SYNOPSIS:** 
 ```
-solution = foo.compute_path(goal_x, goal_y, map_input, robot_input)
+set_base_position(self, base_x, base_y)
 ```
 
 **DESCRIPTION**\
-Compute best task-space path(one that result in the least amount of joint angle moved) and without colliding with obstacle. Due to limitation of sequencial_IK_3 function, which can give out at most 4 joint solution despite infinite number of solutions being available. It may failed to compute path because all 4 solution provide by sequencial_IK_3 all collide with obstacle or wall.
+Update base_position attribute of current RobotArm object.
 
 
 **PARAMETER**
-- goal_x: X position target in map's frame of reference (scaled to pygame's resolution). **Only takes integer as input.**
-- goal_y: Y position target in map's frame of reference (scaled to pygame's resolution). **Only takes integer as input.**
-- map_input: Map object that robot arm is in. **Only takes Map object as input.** 
-- robot_input: Robot object that must move through map without colliding with object. **Only takes Robot object as input.** 
+- base_x: X position of RobotArm object's base. **Only takes integer as input.**
+- base_y: Y position of RobotArm object's base. **Only takes integer as input.**
+
 
 **OPTIONS**\
 NONE
 
 **EXAMPLES**
 ```
-path = foo.compute_path(100,100, map, robot)
-
-# Example result in path variable.
-# Parent array (path[i]) hold each path node.
-# Array nested inside (path[i][j]) hold each joint angle.
-# path => [[0,0,0],[pi/2,pi/2,pi/2], ...]
+R.set_base_position(0, 0)
 ```
 
 **RETURN_VALUE**\
-A 2D nested list of path to the goal coordinate. Each element in path hold joint configuration on each path node.
+NONE
+
+**DIAGNOSTICS**\
+None
+
+**BUGS**\
+NONE
+
+
+## forward_kinematic
+
+**NAME:** \
+forward_kinematic
+
+**TYPE:**\
+RobotArm's method
+
+**SYNOPSIS:** 
+```
+forward_kinematic(self, joint)
+```
+
+**DESCRIPTION**\
+Compute forward kinematic of the RobotArm object according to input joint angle. Then update angle and end_positionX,Y of each link. Also return end_positionX,Y of each link.
+
+
+**PARAMETER**
+- joint: List of joint angle to be compute, list from base position to end effector. **Only takes list of floating point number as input.**
+
+**OPTIONS**\
+NONE
+
+**EXAMPLES**
+```
+Link_pos = R.forward_kinematic([math.pi/2, -math.pi/2, 0])
+
+# Link_pos[0] = X1, Y1
+# Link_pos[1] = X2, Y2
+# ...
+```
+
+**RETURN_VALUE**\
+Return a list of tuple of X and Y coordinate at end point of each link.
+
+**DIAGNOSTICS**\
+- `joint only take list of real number as input`\
+joint isn't the same type as what the function accept. Refer in PARAMETER topic. The function doesn't automatically type cast any variable, so integer isn't accept as well.
+
+- `input joint count doesn't match object`\
+number of joint angle at input doesn't match the number of joint of RobotArm object.
+
+**BUGS**\
+NONE
+
+
+## check_wall_collision
+
+**NAME:** \
+check_wall_collision
+
+**TYPE:**\
+RobotArm's method
+
+**SYNOPSIS:** 
+```
+check_wall_collision(self, map_x, map_y, map_size_x, map_size_y)
+```
+
+**DESCRIPTION**\
+Compute if current configuration of RobotArm object collide with Map's wall or not.
+
+
+**PARAMETER**
+- map_x: Top-left X coordinate where the map start. **Only takes integer as input.**
+- map_y: Top-left Y coordinate where the map start. **Only takes integer as input.**
+- map_size_x: Size of map in X axis (width). **Only takes integer as input.**
+- map_size_y: Size of map in Y axis (height). **Only takes integer as input.**
+
+**OPTIONS**\
+NONE
+
+**EXAMPLES**
+```
+Collide = R.check_wall_collision(100,100,500,500)
+
+# Collide = True
+# Collide = False
+```
+
+**RETURN_VALUE**\
+Return True if current configuration collide with map wall.
+Return False if not.
+
+**DIAGNOSTICS**\
+
+Common issue arised when using this method.
+- `<input variable> only take <type> as input.`
+Input isn't the same type as what the function accept. Refer in PARAMETER topic. The function doesn't automatically type cast any variable, so floating point without decimal point isn't accept as well.
+
+- `Object's base_position isn't assigned yet. Draw the robot first.`\
+Base position of RobotArm object isn't assigned yet. Consider assigning them using set_base_position method. Or draw_robot() which can assign base_position as well.
+
+**BUGS**\
+NONE
+
+
+## check_object_collision
+
+**NAME:** \
+check_object_collision
+
+**TYPE:**\
+RobotArm's method
+
+**SYNOPSIS:** 
+```
+check_object_collision(self, obstacle_list)
+```
+
+**DESCRIPTION**\
+Compute if current configuration of RobotArm object collide with obstacle or not.
+
+
+**PARAMETER**
+- obstacle_list: List of Discrete_map object that has value of 1 (is obstacle). Representing all collision element from full grid map. **Only take list of Discrete_map of input.**
+
+**OPTIONS**\
+NONE
+
+**EXAMPLES**
+```
+Collide = R.check_object_collision(Map.obstacle_list)
+
+# Collide = True
+# Collide = False
+```
+
+**RETURN_VALUE**\
+Return True if current configuration collide with any obstacle element in map. Return False if not.
+
+**DIAGNOSTICS**\
+
+Common issue arised when using this method.
+- `<input variable> only take <type> as input.`
+Input isn't the same type as what the function accept. Refer in PARAMETER topic.
+
+- `obstacle <number> is not Discrete_map object.`
+Specify element isn't the same type as what the function accept. Refer in PARAMETER topic.
+
+- `Object's base_position isn't assigned yet. Draw the robot first.`\
+Base position of RobotArm object isn't assigned yet. Consider assigning them using set_base_position method. Or draw_robot() which can assign base_position as well.
+
+**BUGS**\
+NONE
+
+
+## draw_robot
+
+**NAME:** \
+draw_robot
+
+**TYPE:**\
+RobotArm's method
+
+**SYNOPSIS:** 
+```
+draw_robot(self, pygame_screen, base_x=None, base_y=None)
+```
+
+**DESCRIPTION**\
+Draw RobotArm on pygame screen according to current object's attribute.
+
+
+**PARAMETER**
+- pygame_screen: pygame_screen object.
+- base_x: X coordinate of RobotArm object's base reference in pygame's coordinate. **Only take integer as input**
+- base_y: Y coordinate of RobotArm object's base reference in pygame's coordinate. **Only take integer as input**
+
+**OPTIONS**\
+NONE
+
+**EXAMPLES**
+```
+R.draw_robot(screen, 100, 600)
+```
+
+**RETURN_VALUE**\
+NONE
 
 **DIAGNOSTICS**
 
 Common issue arised when using this method.
 - `<input variable> only take <type> as input.`
+Input isn't the same type as what the function accept. Refer in PARAMETER topic.
 
-Input isn't the same type as what the function accept. Refer in PARAMETER topic. The function doesn't automatically type cast any variable, so floating point without decimal point isn't accept as well.
+- `Object's base_position isn't assigned yet. Draw the robot first.`\
+Base position of RobotArm object isn't assigned yet. Consider assigning them using set_base_position method. Or draw_robot() which can assign base_position as well.
 
-- `All config collide with wall/obstacle.`
+**BUGS**\
+NONE
 
-Due to sequencial_IK_3, it can't find any solution that doesn't collide with wall or obstacle. Suggest using other inverse kinematic function (third party). Better first party inverse kinematic function will be implement later.
+## sequencial_IK_3
 
-- `Maximum iteration reached.`
+**NAME:** \
+sequencial_IK_3
 
-Loop count when searching map has reach maximum limit. This limit is just to prevent run away loop. If map can't be search with default limit. It's advices to tune constant value "MAX_ITER" according to specific use case.
+**TYPE:**\
+RobotArm's method
 
-**BUGS**
-- Due to how sequencial_IK_3 work, which only give out 4 solutions, all 4 solution may collide with wall or obstacle which cause the search to fail. 
-- Unknown bug when checking if target position is reachable or not, (compute each link length whether fully extending or fully retract can reach specify position or not.) Initial suspection is miscalculate when transforming frame between robot's and map's.
+**SYNOPSIS:** 
+```
+sequencial_IK_3(self, in_x, in_y)
+```
+
+**DESCRIPTION**\
+Compute joint configuration of 3 joints robot arm that make the end effector touch in_x and in_y target coordinate. **This function is for demonstration purpose only.** The joint configuration is computed by moving 1st joint to point to the target. Then, normal 2 dimension inverse kinematic is computed for joint 2 and 3. If Joint 2,3 can reach target without moving joint 1, the solution also include them as well. Due to how inverse kinematic is solve, it may not find the most optimal path to move joint to specify target.
+
+
+**PARAMETER**
+- in_x: X coordinate of target that RobotArm object should moved to. **Only take integer as input**
+- in_y: Y coordinate of target that RobotArm object should moved to.  **Only take integer as input**
+
+**OPTIONS**\
+NONE
+
+**EXAMPLES**
+```
+solution = R.sequencial_IK_3(100, 600)
+```
+
+**RETURN_VALUE**\
+Nested list of at most 4 joint solution, each solution hold 3 joint angle from base to end effector.
+
+**DIAGNOSTICS**
+
+Common issue arised when using this method.
+- `<input variable> only take <type> as input.`
+Input isn't the same type as what the function accept. Refer in PARAMETER topic.
+
+- `Object's base_position isn't assigned yet. Draw the robot first.`\
+Base position of RobotArm object isn't assigned yet. Consider assigning them using set_base_position method. Or draw_robot() which can assign base_position as well.
+
+- This method is for demo purpose. The joint configuration may not be optimal.
+
+**BUGS**\
+- Due to unknown bug when checking if target position is reachable or not, (compute each link length whether fully extending or fully retract can reach specify position or not.) Initial suspection is miscalculate when transforming frame between robot's and map's.
