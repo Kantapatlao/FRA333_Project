@@ -20,7 +20,7 @@ Custom object
 
 **SYNOPSIS:** 
 ```
-A_Star(self)
+A_Star()
 ```
 
 **DESCRIPTION**\
@@ -53,7 +53,7 @@ A_Star's method
 
 **SYNOPSIS:** 
 ```
-compute_path(self, goal_x, goal_y, map_input, robot_input)
+solution = foo.compute_path(goal_x, goal_y, map_input, robot_input)
 ```
 
 **DESCRIPTION**\
@@ -61,7 +61,6 @@ Compute best task-space path(one that result in the least amount of joint angle 
 
 
 **PARAMETER**
-- self: Empty A_Star object.
 - goal_x: X position target in map's frame of reference (scaled to pygame's resolution). **Only takes integer as input.**
 - goal_y: Y position target in map's frame of reference (scaled to pygame's resolution). **Only takes integer as input.**
 - map_input: Map object that robot arm is in. **Only takes Map object as input.** 
