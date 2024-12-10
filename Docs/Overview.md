@@ -7,7 +7,7 @@
 List of public API in each file with overview of how each function work.
 
 ## A_Star.py
-- A* object: A* compute object, declare before use.
+- A_star object: A* compute object, declare before use.
     - compute_path: take goal coordinate, map and robot object to compute path in form of _A_Star_Node sequence to move through.
 
 ## map_generator.ipynb
