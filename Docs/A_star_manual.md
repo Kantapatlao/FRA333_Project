@@ -1,7 +1,14 @@
 # A_Star.py
-Object in A_Star.py file:
+**Object in A_Star.py file**
 - A_Star object
     - compute_path
+
+**Dependency package**
+- math
+- RobotARM.constant
+- RobotARM.robot
+- Path_Finding.map_optimizer
+
 
 ## A_star object
 
@@ -46,7 +53,7 @@ A_Star's method
 
 **SYNOPSIS:** 
 ```
-foo.compute_path(goal_x, goal_y, map_input, robot_input)
+solution = foo.compute_path(goal_x, goal_y, map_input, robot_input)
 ```
 
 **DESCRIPTION**\
@@ -84,7 +91,7 @@ Input isn't the same type as what the function accept. Refer in PARAMETER topic.
 
 - `All config collide with wall/obstacle.`
 
-Due to sequencial_IK_3, it can't find any solution that doesn't collide with wall or obstacle. Suggest using other inverse kinematic function (third party). First party inverse kinematic function will be implement later.
+Due to sequencial_IK_3, it can't find any solution that doesn't collide with wall or obstacle. Suggest using other inverse kinematic function (third party). Better first party inverse kinematic function will be implement later.
 
 - `Maximum iteration reached.`
 
