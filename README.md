@@ -246,6 +246,47 @@ path = foo.compute_path(100,100, map, robot)
   Nested list 2 มิติที่แสดงเส้นทางไปยังพิกัดเป้าหมาย แต่ละองค์ประกอบในเส้นทาง (path) จะเก็บค่าการจัดวางข้อต่อ (joint configuration) ของแต่ละโหนดในเส้นทางนั้น
 
 ## **การใช้งานโปรแกรม**
+ใช้ไฟล์ Path_Finding_Robot.py ในการรันเพื่อทดสอบการทำงาน\
+**สิ่งที่ต้อง import เข้ามา**
+```
+# Importing the os module to interact with the operating system
+import os
+
+# Importing the math module for mathematical operations
+import math
+
+# Importing numpy for numerical operations, commonly used for arrays and matrices
+import numpy as np
+
+# Importing pygame for game development, particularly for graphical rendering
+import pygame
+
+# Importing the Discrete_map and Map classes from Path_Finding.map_optimizer for map handling
+from Path_Finding.map_optimizer import Discrete_map, Map
+
+# Importing constants from RobotARM.constant for robot arm configuration
+import RobotARM.constant as R_const
+
+# Importing the RobotArm class from RobotARM.robot to control the robot arm
+from RobotARM.robot import RobotArm
+
+# Importing map2img function from Map_Utils.visualize_map to visualize maps as images
+from Map_Utils.visualize_map import map2img
+
+# Importing the A_Star class from A_Star.A_Star for pathfinding algorithm implementation
+from A_Star.A_Star import A_Star
+
+```
+**ตัวแปรที่กำหนด**
+```
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+PI = math.pi
+MAP_PATH = os.path.join(os.path.abspath("Map"), 'map1.npy') 
+```
+MAP_PATH ใช้เลือกแผนที่ที่ต้องการทำการจำลองเมื่อต้องการเปลี่ยนแผนที่ที่จะทดสอบให้เปลี่ยนที่ตัวเลขของ 'map1.npy' ได้ตั้งแต่ 1-5
+
+**ภายใน main():**
 
 
 
