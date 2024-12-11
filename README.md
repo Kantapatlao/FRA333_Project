@@ -88,10 +88,16 @@ make_map(sizeX, sizeY, obstacles_count)
     จะคืนค่าแผนที่ 2 มิติในรูปแบบของ numpy.ndarray ขนาดตามที่ระบุใน sizeX และ sizeY โดยเส้นทางที่สามารถเดินได้จะถูกแทนด้วยค่า 0 และสิ่งกีดขวางจะแทนด้วยค่า 1
 
 - **ตัวอย่างแผนที่ที่ได้ออกมา**\
-    รอภาพพพพพพพพพพพพพพพพพพพพพพพพพพพพพพพพ
+ภาพแผนที่ได้ออกมา\
+![map1](image%20for%20read%20me/map_from_map_gen.png)\
+![map2](image%20for%20read%20me/map_gen_2.png)\
+![map3](image%20for%20read%20me/map_gen_3.png)
+
+เมื่อไม่สามารถ generate แผนที่ออกมาได้\
+![map4](image%20for%20read%20me/map_gen_4.png)
 
 ## map_optimizer.py
-ใช้ปรับแต่งแผนที่ที่ไดมาจาก map_generator โดย\
+ใช้ปรับแต่งแผนที่ที่ได้มาจาก map_generator โดย\
 **BT_Node()**\
 เป็นออบเจ็กต์ที่ใช้สำหรับแบ่งแผนที่กริดที่ได้มาเป็นส่วนย่อยๆ
 - **รูปแบบคำสั่ง**
@@ -161,6 +167,20 @@ show_graph(self)
   - find_nearest_node(self, x, y): จากพิกัดที่กำหนด ส่งคืน Discrete map ที่มีพิกัดที่กำหนดอยู่ภายใน
   - list_obstacle(self): ใน Map ปัจจุบัน ส่งคืนรายการของ Discrete map ที่มีค่าเป็น 1 (คือสิ่งกีดขวาง)
   - show_graph(self): จาก Map ปัจจุบัน พิมพ์ข้อมูลของแต่ละโหนด (Discrete map) และคุณสมบัติออกมา
+
+**ผลลัพท์หลังจากผ่าน map_optimizer**\
+ข้อมูลจำนวน Node ที่เหลืออยู่ของแผนที่หลังผ่านกาน Optimize จาก 50x50 node\
+![map_op_data](image%20for%20read%20me/Map_optimizer.png)\
+map1.npy\
+![map_op_1](image%20for%20read%20me/OP1.png)\
+map2.npy\
+![map_op_2](image%20for%20read%20me/OP2.png)\
+map3.npy\
+![map_op_3](image%20for%20read%20me/OP3.png)\
+map4.npy\
+![map_op_4](image%20for%20read%20me/OP4.png)\
+map5.npy\
+![map_op_5](image%20for%20read%20me/OP5.png)
 
 ## robot.py
 สร้างออบเจ็กต์ RobotArm  ที่ใช้เก็บออบเจ็กต์ลิงก์ของหุ่นยนต์ (robot link) และตำแหน่งฐาน (base position) โดยแต่ละลิงก์จะเป็น Private object ของ RobotArm ซึ่งค่าเริ่มต้นของมุมของแต่ละลิงก์จะถูกตั้งเป็น 0
@@ -251,32 +271,33 @@ path = foo.compute_path(100,100, map, robot)
 
 **สิ่งที่ต้อง import เข้ามา**
 ```
-# Importing the os module to interact with the operating system
+# นำเข้าโมดูล os เพื่อทำงานร่วมกับระบบปฏิบัติการ
 import os
 
-# Importing the math module for mathematical operations
+# นำเข้าโมดูล math สำหรับการคำนวณทางคณิตศาสตร์
 import math
 
-# Importing numpy for numerical operations, commonly used for arrays and matrices
+# นำเข้า numpy สำหรับการดำเนินการทางตัวเลข โดยเฉพาะการทำงานกับอาร์เรย์และเมทริกซ์
 import numpy as np
 
-# Importing pygame for game development, particularly for graphical rendering
+# นำเข้า pygame สำหรับการพัฒนาเกม โดยเฉพาะการแสดงผลกราฟิก
 import pygame
 
-# Importing the Discrete_map and Map classes from Path_Finding.map_optimizer for map handling
+# นำเข้าคลาส Discrete_map และ Map จาก Path_Finding.map_optimizer สำหรับจัดการแผนที่
 from Path_Finding.map_optimizer import Discrete_map, Map
 
-# Importing constants from RobotARM.constant for robot arm configuration
+# นำเข้าค่าคงที่จาก RobotARM.constant สำหรับการตั้งค่าหุ่นยนต์อาร์ม
 import RobotARM.constant as R_const
 
-# Importing the RobotArm class from RobotARM.robot to control the robot arm
+# นำเข้าคลาส RobotArm จาก RobotARM.robot สำหรับควบคุมการทำงานของหุ่นยนต์อาร์ม
 from RobotARM.robot import RobotArm
 
-# Importing map2img function from Map_Utils.visualize_map to visualize maps as images
+# นำเข้าฟังก์ชัน map2img จาก Map_Utils.visualize_map เพื่อแสดงผลแผนที่ในรูปแบบภาพ
 from Map_Utils.visualize_map import map2img
 
-# Importing the A_Star class from A_Star.A_Star for pathfinding algorithm implementation
+# นำเข้าคลาส A_Star จาก A_Star.A_Star สำหรับการใช้งานอัลกอริทึมค้นหาเส้นทาง
 from A_Star.A_Star import A_Star
+
 
 ```
 **ตัวแปรที่กำหนด**
@@ -287,16 +308,86 @@ SCREEN_HEIGHT = 720
 PI = math.pi
 
 # เลือกไฟล์แผนที่
-MAP_PATH = os.path.join(os.path.abspath("Map"), 'map1.npy') 
+MAP_PATH = os.path.join(os.path.abspath("Map"), 'map1.npy')
+
 ```
 MAP_PATH ใช้เลือกแผนที่ที่ต้องการทำการจำลองเมื่อต้องการเปลี่ยนแผนที่ที่จะทดสอบให้เปลี่ยนที่ตัวเลขของ 'map1.npy' ได้ตั้งแต่ 1-5
 
+**ภายใน main()**
+```
+    # การเริ่มต้นแต่ละโมดูล
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    # การเริ่มต้นระบบแผนที่
+    np_map = np.load(MAP_PATH, allow_pickle=False)
+    the_map = Map(np_map)
+
+    # การเริ่มต้นอาร์มหุ่นยนต์
+    Robot = RobotArm([180,180,180])
+    Robot.forward_kinematic([PI/2, -PI, PI])
+    Robot.set_base_position(R_const.ROBOT_COORDINATE_X, R_const.ROBOT_COORDINATE_Y)
+
+    # แสดงแผนที่บนหน้าจอ
+    map2img(screen, np_map, 100, 100)
+
+    # จุดหมาย (target) ที่หุ่นยนต์ต้องไป
+    target_x = 150
+    target_y = 150
+
+    # สร้างอ็อบเจกต์ A_Star เพื่อหาทาง
+    A = A_Star()
+    path = A.compute_path(target_x, target_y, the_map, Robot)
+    running = True
+    state = 0
+    key_reset = True
+
+    # วนลูปสำหรับการแสดงผลและรับอินพุตจากผู้ใช้
+    while running:
+
+        screen.fill((255,255,255))  # กรอกหน้าจอด้วยสีขาว
+        map2img(screen, np_map, 100, 100)  # แสดงแผนที่
+
+        for event in pygame.event.get():
+            
+            if event.type == pygame.QUIT:
+                running = False  # ออกจากลูปเมื่อปิดหน้าต่าง
+            
+            elif event.type == pygame.KEYDOWN and key_reset:
+                key = pygame.key.get_pressed()
+                if key[pygame.K_LEFT]:
+                    state = max(0, state - 1)  # ลดสถานะ (state) เมื่อกดปุ่มซ้าย
+                    key_reset = False
+
+                if key[pygame.K_RIGHT]:
+                    state = min(len(path) - 1, state + 1)  # เพิ่มสถานะ (state) เมื่อกดปุ่มขวา
+                    key_reset = False
+
+            elif event.type == pygame.KEYUP:
+                key_reset = True  # รีเซ็ตการกดปุ่มเมื่อปล่อยปุ่ม
+
+        # คำนวณการเคลื่อนที่ของหุ่นยนต์
+        Robot.forward_kinematic(path[state].joint_sol)
+        Robot.draw_robot(screen, R_const.ROBOT_COORDINATE_X, R_const.ROBOT_COORDINATE_Y)
+        
+        # แสดงจุดหมาย (target)
+        pygame.draw.circle(screen, (255,0,0), (target_x + 100, target_y + 100), radius=3)
+
+        pygame.display.flip()  # อัพเดทหน้าจอ
+
+    pygame.quit()  # ปิด Pygame
+    return 0
+
+if __name__ == "__main__":
+    main()
+```
 **การทำงาน:**
 
-1. เมื่อโปรแกรมเริ่มต้นขึ้น จะมีการโหลดแผนที่จากไฟล์ map[].npy 
-2. หุ่นยนต์จะใช้ A Algorithm* ในการคำนวณเส้นทางจากตำแหน่งเริ่มต้นไปยังจุดหมายที่กำหนด
-3. ผู้ใช้สามารถกดปุ่มลูกศรซ้าย (←) และลูกศรขวา (→) เพื่อเปลี่ยนสถานะ (state) และดูการเคลื่อนที่ของหุ่นยนต์
-4. โปรแกรมจะมีการแสดงแผนที่และหุ่นยนต์บนหน้าจอ
+1. เมื่อโปรแกรมเริ่มต้นขึ้น จะมีการโหลดแผนที่จากไฟล์ map[].npy
+2. สามารถกำหนด target ได้ที่ตัวแปร target_x = () และ target_y = ()
+3. หุ่นยนต์จะใช้ A Algorithm* ในการคำนวณเส้นทางจากตำแหน่งเริ่มต้นไปยังจุดหมายที่กำหนด
+4. ผู้ใช้สามารถกดปุ่มลูกศรซ้าย (←) และลูกศรขวา (→) เพื่อเปลี่ยนสถานะ (state) และดูการเคลื่อนที่ของหุ่นยนต์
+5. โปรแกรมจะมีการแสดงแผนที่และหุ่นยนต์บนหน้าจอ
 
 **คำอธิบายฟังก์ชัน:**
   - main(): ฟังก์ชันหลักที่เริ่มต้นโปรแกรม, คำนวณเส้นทางและแสดงผลการเคลื่อนที่ของหุ่นยนต์
