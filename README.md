@@ -1,17 +1,22 @@
-## **FRA333 Class Project: Path finding and position trajectory generation to avoid collision in 3 DOF Planar Revolute robot**
+# **FRA333 Class Project: Path finding and position trajectory generation to avoid collision in 3 DOF Planar Revolute robot**
 
 โครงงานนี้ถูกจัดทำขึ้นเพื่อใช้ในการศึกษาและพัฒนาการสร้างวิถีการเคลื่อนที่ (Trajectory Generation) สำหรับหุ่นยนต์ 3 DOF Planar revolute robot ที่สามารถหลบหลีกสิ่งกีดขวางภายในพื้นที่ทำงาน (Task Space) ได้ โดยการจำลองการเคลื่อนที่และลักษณะของหุ่น ผ่านการใช้ Python และอัลกอริทึมที่ใช้ในการค้นหาเส้นทาง (Path finding) ผลลัพท์ที่คาดหวังคือโปรแกรมจำลองแขนกล 3 DOF ที่สามารถเคลื่อนที่ไปยังเป้าหมายได้โดยหลีกเลี่ยงการชนสิ่งกีดขวางตามข้อกำหนดในขั้นตอนการวางแผนวิถี (Trajectory planning)
 การทดสอบจะดำเนินการผ่านการจำลองด้วย Pygame ที่จะแสดงให้เห็นถึงการเคลื่อนที่ในพื่นที่ทำงานที่มีสิ่งกีดขวางหลากหลายรูปแบบ มี่ใช้เป็นเกฯฑ์ให้เห็นภาพในการทดสอบ
 
-## Table of Contents
+# Table of Contents
 - [จุดประสงค์โครงการ](#จุดประสงค์โครงการ)
 - [System Overview](#system-overview)
+- [โปรแกรมละหลักการทำงาน](#โปรแกรมละหลักการทำงาน)
+  - [map_generator.ipynb](#map_generatoripynb)
+  - [map_optimizer.py](#map_optimizerpy)
+  - [robot.py](#robotpy)
+  - [A_Star.py](#a_starpy)
 - [การใช้งานโปรแกรม](#การใช้งานโปรแกรม)
 - [ผลการทดลอง](#ผลการทดลอง)
 - [สรุปและวิเคราะห์ผล](#สรุปและวิเคราะห์ผล)
 - [เอกสารอ้างอิง](#เอกสารอ้างอิง)
 
-## **จุดประสงค์โครงการ**
+# **จุดประสงค์โครงการ**
 1)	เพื่อศึกษาการเคลื่อนที่ของแขนกลแบบ Revolute ในปริภูมิ 2 มิติ  
 2)	เพื่อศึกษาวิธีการสร้างวิถีการโคจรให้แขนกลเคลื่อนที่ไปยังเป้าหมายในขณะที่มีสิ่งกีดขวาง
 3)	เพื่อศึกษาการทำ Path finding และ Trajectory planning สำหรับการสร้างวิถีโคจรที่หลบหลีกสิ่งกีดขวางและไปยังเป้าหมาย
@@ -43,12 +48,12 @@
     - จำลองการเคลื่อนที่ภายใน Simulation ด้วยภาษา Python
 
 
-## **System Overview**
+# **System Overview**
+
+รอภาพพพพพพพพพพพพพพพ
 
 
-
-
-## **โปรดลง Library พวกนี้ก่อนรัน**
+# **โปรดลง Library พวกนี้ก่อนรัน**
   - numpy
   - math
   - roboticstoolbox
@@ -64,36 +69,240 @@
 ```bash
   - gh repo clone Kantapatlao/FRA333_Project
 ```
-## **การใช้งานโปรแกรม**
-**ไฟล์ map_generator.ipynb**
+# **โปรแกรมละหลักการทำงาน**
+## map_generator.ipynb
 
-make_map(): สร้างแผนที่แบบกริดในรูปแบบ ndarray ของ numpy จากขนาดแผนที่และจำนวนสิ่งกีดขวางที่กำหนด โดยที่สิ่งกีดขวางจะมีค่าเป็น 1 และเส้นทางที่สามารถเดินได้จะมีค่าเป็น 0
+คือโปรแกรมที่ใช้ในการสร้างแผนที่ โดย
 
-**ไฟล์ map_optimizer.py**
+**make_map()** \
+เป็นฟังค์ชั่นสร้างแผนที่แบบกริด (Grid map) โดยกำหนดขนาดใน sizeX และ sizeY จากนั้นเพิ่มสิ่งกีดขวางตามจำนวนที่ระบุใน obstacles_count หากไม่ได้ระบุ obstacles_count ฟังก์ชันจะสุ่มจำนวนสิ่งกีดขวางระหว่าง 1 ถึง 5 และวางไว้ในแผนที่ สิ่งกีดขวางจะถูกวางในตำแหน่งสุ่มภายในแผนที่ พร้อมขนาดและรูปร่างแบบสุ่ม
+- **รูปแบบคำสั่ง**
+```
+make_map(sizeX, sizeY, obstacles_count)
+```
+- **พารามิเตอร์**
+    - sizeX, sizeY: ขนาดของกริดแผนที่ ทั้งสองค่าต้องเป็น จำนวนเต็มบวก (unsigned integer) เท่านั้น ฟังก์ชันนี้ไม่แปลงชนิดตัวแปรให้อัตโนมัติ
+    - obstacles_count: จำนวนสิ่งกีดขวางที่วางในแผนที่ ต้องเป็น จำนวนเต็มบวก (unsigned integer) เท่านั้น ฟังก์ชันนี้ไม่แปลงชนิดตัวแปรให้อัตโนมัติ โดย obstacles_count สามารถละเว้นได้ และฟังก์ชันจะสุ่มทำการจำนวนสิ่งกีดขวางตั้งแต่ 1 ถึง 5 เพื่อวางภายในแผนที่
 
-Discrete map: เป็นคลาสที่ใช้เก็บข้อมูลของแผนที่ในรูปแบบของตำแหน่ง X,Y ขนาดของแผนที่และสถานะของตำแน่งนั้นว่าเป็นสิ่งกีดขวางหรือไม่ประกอบไปด้วย
-  - get_center_pos(): ส่งคืนค่าตำแหน่งศูนย์กลางของ Discrete map
-  - get-bottonm_right_pos(): ส่งคืนค่าตำแหน่งมุมขวาล่างของ Discrete map
-  - scale_discrete_map: ส่งคือ discrete map ใไม่ที่ปรับขนาดตามค่าที่กำหนด
-Map: เป็นคลาสที่นำข้อมูลแผนที่แบบกริดมาแปลงเป็น Discrete map ประกอบไปด้วย
-  - find_adjacent_node():รับข้อมูลจาก Discrete map มาแล้วส่งคืนแมพที่ ขอบบน, ล่าง, ขวา, ซ้ายติดกัน 
-  - find_nearest_node(): จากพิกัดที่กำหนด ส่งคืน Discrete map ที่มีพิกัดอยู่ภายใน
-  - list_obstacle(): ใน Map ปัจจุบัน ส่งคืนรายการของ Discrete map ที่มีค่าเป็น 1 (คือสิ่งกีดขวาง)
-  - show_graph(): จาก Map ปัจจุบัน พิมพ์ข้อมูลของแต่ละโหนด (Discrete map) และคุณสมบัติออกมา
+- **ค่าที่ส่งกลับมา**\
+    จะคืนค่าแผนที่ 2 มิติในรูปแบบของ numpy.ndarray ขนาดตามที่ระบุใน sizeX และ sizeY โดยเส้นทางที่สามารถเดินได้จะถูกแทนด้วยค่า 0 และสิ่งกีดขวางจะแทนด้วยค่า 1
 
-**ไฟล์ robot.py**
+- **ตัวอย่างแผนที่ที่ได้ออกมา**\
+    รอภาพพพพพพพพพพพพพพพพพพพพพพพพพพพพพพพพ
 
-Robot: คลาสที่เป็บข้อมูลของข้อต่อ, ความยาวของก้าน และตำแหน่งฐาน ประกอบไปด้วย
-  - set_base_position(): จากออบเจ็กต์ Map ปัจจุบัน พิมพ์ข้อมูลของแต่ละโหนด (Discrete map) และคุณสมบัติออกมา
-  - forward_kinematic(): จากมุมของข้อต่อที่กำหนด อัปเดตออบเจ็กต์หุ่นยนต์ด้วยมุมและตำแหน่งที่คำนวณได้ของแต่ละส่วน และส่งคืนตำแหน่งสุดท้ายของแต่ละส่วน
-  - sequencial_IK_3(): จากพิกัด X,Y ที่กำหนด คำนวณค่ามุมของข้อต่อสูงสุด 4 ชุดที่ทำให้ปลายแขนถึงพิกัดที่กำหนด ส่งคืนชุดค่ามุมข้อต่อที่คำนวณได้เป็นรายการ
-  - check_wall_collision(): จากขนาดและตำแหน่งของแผนที่ ตรวจสอบว่าค่ามุมข้อต่อในปัจจุบันชนกับขอบของแผนที่หรือไม่
-  - check_object_collision(): จาก Discrete map object ตรวจสอบว่าค่ามุมข้อต่อในปัจจุบันชนกับสิ่งกีดขวางใดๆ หรือไม่
-  - draw_robot(): วาดหุ่นยนต์ลงในหน้าจอ pygame ตามค่ามุมข้อต่อปัจจุบัน สามารถกำหนดตำแหน่งฐานเพิ่มเติมได้ในฟังก์ชันนี้
+## map_optimizer.py
+ใช้ปรับแต่งแผนที่ที่ไดมาจาก map_generator โดย\
+**BT_Node()**\
+เป็นออบเจ็กต์ที่ใช้สำหรับแบ่งแผนที่กริดที่ได้มาเป็นส่วนย่อยๆ
+- **รูปแบบคำสั่ง**
+```
+BT_Node(self, data_in, posX_in, posY_in)
+```
+- **คุณลักษณะ**
+  - data: ข้อมูลของโหนด (อาจเก็บข้อมูลในรูปแบบ ndarray สำหรับแผนที่กริด หรือ Discrete_map)
+  - posX: พิกัด X ของโหนด (ใช้เฉพาะในระหว่างการแบ่งแผนที่ เมื่อการแบ่งแผนที่เสร็จสมบูรณ์แล้ว คุณสมบัตินี้จะไม่ได้ใช้งาน)
+  - posY: พิกัด Y ของโหนด (ใช้เฉพาะในระหว่างการแบ่งแผนที่ เมื่อการแบ่งแผนที่เสร็จสมบูรณ์แล้ว คุณสมบัตินี้จะไม่ได้ใช้งาน)
+  - childA, childB: โหนดลูกของ Binary Tree Node ปัจจุบัน แต่ละโหนดจะเก็บออบเจ็กต์ BT_Node เพียงหนึ่งตัว
+- **ตัวอย่างการใช้งาน**
+```
+A = BT_Node(np.zeros((5,5)), 10, 10)
+```
+- **ค่าที่ส่งกลับมา**\
+เป็น Binary Tree Node คือออบเจ็กต์ที่ใช้จัดการข้อมูลแบบลำดับชั้น
 
-**ไฟล์ A_Star.py**
-  A object*: ออบเจ็กต์สำหรับคำนวณด้วยอัลกอริธึม A* ให้ประกาศก่อนใช้งาน
-  - compute_path(): รับพิกัดเป้าหมาย แผนที่ และออบเจ็กต์หุ่นยนต์ เพื่อคำนวณเส้นทางในรูปของลำดับของ _A_Star_Node ที่จะใช้ในการเคลื่อนที่
+**Discrete map()**\
+เป็นออบเจ็กต์ที่ใช้แทนส่วนหนึ่งของแผนที่ที่ไม่ต่อเนื่องกัน(Discrete Map)โดยแทนที่การอธิบายแต่ละพิกัดว่าเป็นสิ่งกีดขวางหรือไม่ด้วยการรวมพิกัดที่มีสถานะเดียวกันเข้าด้วยกันในรูปของสี่เหลี่ยมที่ทราบตำแหน่งและขนาด
+- **รูปแบบคำสั่ง**
+```
+Discrete_map(self, value_in, posX_in, posY_in, sizeX_in, sizeY_in)
+```
+- **คุณลักษณะ**
+  - value: เก็บค่าที่ระบุว่า Discrete Map ปัจจุบันเป็นสิ่งกีดขวาง (1) หรือเส้นทางว่าง (0)
+  - posX, posY: เก็บพิกัดมุมซ้ายบนของ Discrete Map ปัจจุบัน
+  - sizeX, sizeY: เก็บความกว้างและความสูงของ Discrete Map ปัจจุบัน
+- **ค่าที่ส่งกลับมา**\
+  เป็น Node ของแผนที่ส่วนที่ไม่ต่อเนื่องกัน
+- **ตัวอย่างการใช้งาน**
+```
+DM = Discrete_map(1,10,20,15,25)
+```
+ภายในออบเจ็กต์ Discrete map() ประกอบไปด้วยฟังค์ชั่น ดังนี้
+```
+get_center_pos(self)
+get-bottonm_right_pos(self)
+scale_discrete_map(self, scale, x_offset, y_offset)
+```
+  - get_center_pos(self): ส่งคืนค่าตำแหน่งศูนย์กลางของ Discrete map
+  - get-bottonm_right_pos(self): ส่งคืนค่าตำแหน่งมุมขวาล่างของ Discrete map
+  - scale_discrete_map(self): ส่งคือ discrete map ใไม่ที่ปรับขนาดตามค่าที่กำหนด
+
+**Map(self, in_map)**\
+เป็นออบเจ็กต์ที่ใช้สำหรับเก็บและคำนวณแผนที่กริดปกติ (Normal Grid Map) ให้เป็นแผนที่กริดแบบไม่ต่อเนื่อง (Discrete Grid Map) โดยในขั้นตอนการเริ่มต้น (Initialization) จะรับแผนที่กริดในรูปแบบ numpy.ndarray จากนั้นจะคำนวณให้เป็นแผนที่แบบไม่ต่อเนื่อง และจัดเก็บผลลัพธ์ไว้ในออบเจ็กต์
+- **รูปแบบคำสั่ง**
+```
+M = Map(np.zeros((10,10)))
+```
+- **คุณลักษณะ**
+  - full_map: เก็บแผนที่กริดทั้งหมดในรูปแบบ numpy.ndarray ซึ่งถูกป้อนเข้ามาในขั้นตอนการเริ่มต้นออบเจ็กต์
+  - tree_map: ตัวเก็บข้อมูลชั่วคราวสำหรับ Binary Tree ที่ใช้ในการเปลี่ยนแผนที่กริดให้เป็นแผนที่แบบไม่ต่อเนื่อง (Discretized Map) คุณสมบัตินี้ไม่ควรถูกเรียกใช้งานจากภายนอกเมธอดของออบเจ็กต์
+  - optimized_map: รายการของ discrete_map ที่แสดงถึงแผนที่กริดที่ป้อนเข้าไป ลำดับของ discrete_map อาจไม่เรียงตามลำดับ
+  - obstacle_list: เก็บเฉพาะ discrete_map ที่มีค่าเป็น 1 (สิ่งกีดขวาง) ซึ่งซ้ำซ้อนกับฟังก์ชัน list_obstacle
+- **พารามิเตอร์**
+  - in_map: แผนที่กริดที่ป้อนเข้ามาในรูปแบบ numpy.ndarray โดยค่า 1 แสดงถึงสิ่งกีดขวาง (obstacle) และค่า 0 แสดงถึงเส้นทางว่าง (free path)
+
+ภายในออบเจ็กต์ Map() ประกอบไปด้วยฟังก์ชั่น ดังนี้
+```
+find_adjacent_node(self, input_node) 
+find_nearest_node(self, x, y)
+list_obstacle(self)
+show_graph(self)
+```
+  - find_adjacent_node(self, input_node):รับข้อมูลจาก Discrete map มาแล้วส่งคืนแมพที่ ขอบบน, ล่าง, ขวา, ซ้ายติดกัน 
+  - find_nearest_node(self, x, y): จากพิกัดที่กำหนด ส่งคืน Discrete map ที่มีพิกัดที่กำหนดอยู่ภายใน
+  - list_obstacle(self): ใน Map ปัจจุบัน ส่งคืนรายการของ Discrete map ที่มีค่าเป็น 1 (คือสิ่งกีดขวาง)
+  - show_graph(self): จาก Map ปัจจุบัน พิมพ์ข้อมูลของแต่ละโหนด (Discrete map) และคุณสมบัติออกมา
+
+## robot.py
+สร้างออบเจ็กต์ RobotArm  ที่ใช้เก็บออบเจ็กต์ลิงก์ของหุ่นยนต์ (robot link) และตำแหน่งฐาน (base position) โดยแต่ละลิงก์จะเป็น Private object ของ RobotArm ซึ่งค่าเริ่มต้นของมุมของแต่ละลิงก์จะถูกตั้งเป็น 0
+- **รูปแบบคำสั่ง**
+```
+RobotArm()
+```
+- **คุณลักษณะ**
+  - base_position: ทูเพิลที่เก็บตำแหน่งฐานของหุ่นยนต์ (Robot)
+  - links: รายการของออบเจ็กต์ลิงก์ (link object) แต่ละลิงก์ประกอบด้วย:
+    - LENGTH: ความยาวของลิงก์ที่เกี่ยวข้อง ค่านี้ควรเป็นค่าคงที่
+    - angle: มุมปัจจุบัน (ในหน่วยเรเดียน) ที่จุดเริ่มต้นของข้อต่อ (joint) เมื่อเทียบกับข้อต่อก่อนหน้า/ฐาน
+    - end_positionX: พิกัด X ของปลายลิงก์
+    - end_positionY: พิกัด Y ของปลายลิงก์
+
+- **พารามิเตอร์**
+  -  link_len: ลิสของความยาวแขนแต่ละท่อน จาก base ถึง end effector
+-**ตัวอย่างการใช้งาน**
+```
+R = RobotArm([200, 200, 200])
+```
+ภายในออบเจ็กต์ RobotArm() ประกอบไปด้วยฟังก์ชั่น ดังนี้
+```
+set_base_position(self, base_x, base_y)
+forward_kinematic(self, joint)
+sequencial_IK_3(self, in_x, in_y)
+check_wall_collision(self, map_x, map_y, map_size_x, map_size_y)
+check_object_collision(self, obstacle_list)
+draw_robot(self, pygame_screen, base_x=None, base_y=None)
+```
+  - set_base_position(self, base_x, base_y): อัปเดตคุณสมบัติ base_position ของออบเจ็กต์ RobotArm ปัจจุบันเพื่อเปลี่ยนตำแหน่งฐานของหุ่นยนต์.
+  - forward_kinematic(self, joint): คำนวณ Forward Kinematics ของออบเจ็กต์ RobotArm ตามมุมข้อต่อที่ได้รับเป็นข้อมูลนำเข้า จากนั้นทำการอัปเดตค่า angle และ end_positionX, end_positionY ของแต่ละลิงก์ พร้อมทั้งคืนค่า end_positionX, end_positionY ของแต่ละลิงก์กลับมา
+    - ตัวอย่างการใช้งาน
+```
+Link_pos = R.forward_kinematic([math.pi/2, -math.pi/2, 0])
+
+# Link_pos[0] = X1, Y1
+# Link_pos[1] = X2, Y2
+# ...
+```
+  - sequencial_IK_3(self, in_x, in_y): คำนวณการจัดวางข้อต่อ (joint configuration) ของหุ่นยนต์ 3 ข้อต่อ (3 joints robot arm) ที่ทำให้ปลายแขนกล (end effector) แตะพิกัดเป้าหมาย in_x และ in_y รับข้อมูลเป็นจำนวนเต็มเท่านั้น โดยฟังก์ชันนี้ใช้เพื่อการสาธิตเท่านั้น และขั้นตอนการคำนวณมีดังนี้
+    - หมุนข้อต่อที่ 1 (Joint 1) ให้ชี้ไปยังเป้าหมาย
+    - คำนวณ Inverse Kinematics แบบ 2 มิติ สำหรับข้อต่อที่ 2 และ 3 (Joint 2 และ Joint 3)
+    - หากข้อต่อที่ 2 และ 3 สามารถไปถึงเป้าหมายได้โดยไม่ต้องหมุนข้อต่อที่ 1 ฟังก์ชันจะรวมวิธีแก้ปัญหานั้นเป็นอีกหนึ่งผลลัพธ์
+
+    - ตัวอย่างการใช้งาน
+```
+solution = R.sequencial_IK_3(100, 600)
+```
+  - check_wall_collision(self, map_x, map_y, map_size_x, map_size_y): จากขนาดและตำแหน่งของแผนที่ ตรวจสอบว่าค่ามุมข้อต่อในปัจจุบันชนกับขอบของแผนที่หรือไม่
+  - check_object_collision(self, obstacle_list): จากออบเจ็กต์ RobotArm ปัจจุบันตรวจสอบว่าชนกับสิ่งกีดขวางใดหรือไม่
+  - draw_robot(self, pygame_screen, base_x=None, base_y=None): วาดหุ่นยนต์ลงในหน้าจอ pygame ตามค่ามุมข้อต่อปัจจุบัน สามารถกำหนดตำแหน่งฐานเพิ่มเติมได้ในฟังก์ชันนี้
+
+## A_Star.py
+
+สร้างออบเจ็กต์ A_Star object เป็นออบเจ็กต์ว่างเปล่าเพื่อใช้เก็บโครงสร้างข้อมูล (data structure) สำหรับการใช้งานในฟังก์ชัน compute_path ในภายหลัง โครงสร้างข้อมูลควรเริ่มต้นในสภาพว่างเปล่าก่อนที่จะเริ่มคำนวณเส้นทาง ไม่จำเป็นต้องกำหนดค่าใดๆ ให้กับคุณสมบัติของออบเจ็กต์ในขั้นตอนนี้
+- **รูปแบบคำสั่ง**
+```
+SA = A_Star()
+```
+- ฟังก์ชั่นภายใน
+```
+compute_path(self, goal_x, goal_y, map_input, robot_input)
+```
+คำนวณเส้นทางที่เหมาะสมที่สุดในพื้นที่งาน (task-space path) ซึ่งจะส่งผลให้เกิดการเคลื่อนที่ของมุมข้อต่อน้อยที่สุด และไม่มีการชนกับสิ่งกีดขวาง เส้นทางจะถูกคำนวณโดยใช้ฟังก์ชัน sequencial_IK_3 อย่างไรก็ตาม เนื่องจากข้อจำกัดของฟังก์ชันดังกล่าวที่สามารถให้คำตอบได้สูงสุดเพียง 4 รูปแบบของข้อต่อ (joint solutions) แม้ว่าจะมีคำตอบที่เป็นไปได้อย่างไม่มีที่สิ้นสุด ฟังก์ชันนี้อาจล้มเหลวในการคำนวณเส้นทางหากคำตอบทั้ง 4 รูปแบบที่ได้จาก sequencial_IK_3 ชนกับสิ่งกีดขวางหรือขอบแผนที่
+
+  - **พารามิเตอร์**
+    - goal_x: พิกัด X เป้าหมายในกรอบอ้างอิงของแผนที่ (ปรับขนาดให้เข้ากับความละเอียดของ Pygame) รับเฉพาะค่าเป็นจำนวนเต็ม (integer)
+    - goal_y: พิกัด Y เป้าหมายในกรอบอ้างอิงของแผนที่ (ปรับขนาดให้เข้ากับความละเอียดของ Pygame) รับเฉพาะค่าเป็นจำนวนเต็ม (integer)
+    - map_input: ออบเจ็กต์แผนที่ (Map object) ที่หุ่นยนต์อยู่ใน รับเฉพาะออบเจ็กต์ประเภท Map เท่านั้น
+    - robot_input: ออบเจ็กต์หุ่นยนต์ (Robot object) ที่ต้องเคลื่อนที่ในแผนที่โดยไม่ชนกับสิ่งกีดขวาง รับเฉพาะออบเจ็กต์ประเภท Robot เท่านั้น
+
+  - **ตัวอย่างการใช้งาน**
+```
+path = foo.compute_path(100,100, map, robot)
+
+# Example result in path variable.
+# Parent array (path[i]) hold each path node.
+# Array nested inside (path[i][j]) hold each joint angle.
+# path => [[0,0,0],[pi/2,pi/2,pi/2], ...]
+```
+  - **ค่าที่ส่งกลับมา**\
+  Nested list 2 มิติที่แสดงเส้นทางไปยังพิกัดเป้าหมาย แต่ละองค์ประกอบในเส้นทาง (path) จะเก็บค่าการจัดวางข้อต่อ (joint configuration) ของแต่ละโหนดในเส้นทางนั้น
+
+# **การใช้งานโปรแกรม**
+## Path_Finding_Robot.py
+จะนำฟังก์ชั่นและออปเจ็กต์จากไฟล์ map_optimizer.py, robot.py และ A_.py มาทำการจำลอง robot arm บน pygame 
+
+**สิ่งที่ต้อง import เข้ามา**
+```
+# Importing the os module to interact with the operating system
+import os
+
+# Importing the math module for mathematical operations
+import math
+
+# Importing numpy for numerical operations, commonly used for arrays and matrices
+import numpy as np
+
+# Importing pygame for game development, particularly for graphical rendering
+import pygame
+
+# Importing the Discrete_map and Map classes from Path_Finding.map_optimizer for map handling
+from Path_Finding.map_optimizer import Discrete_map, Map
+
+# Importing constants from RobotARM.constant for robot arm configuration
+import RobotARM.constant as R_const
+
+# Importing the RobotArm class from RobotARM.robot to control the robot arm
+from RobotARM.robot import RobotArm
+
+# Importing map2img function from Map_Utils.visualize_map to visualize maps as images
+from Map_Utils.visualize_map import map2img
+
+# Importing the A_Star class from A_Star.A_Star for pathfinding algorithm implementation
+from A_Star.A_Star import A_Star
+
+```
+**ตัวแปรที่กำหนด**
+```
+# ค่าคงที่สำหรับขนาดหน้าจอ
+SCREEN_WIDTH = 1280 
+SCREEN_HEIGHT = 720
+PI = math.pi
+
+# เลือกไฟล์แผนที่
+MAP_PATH = os.path.join(os.path.abspath("Map"), 'map1.npy') 
+```
+MAP_PATH ใช้เลือกแผนที่ที่ต้องการทำการจำลองเมื่อต้องการเปลี่ยนแผนที่ที่จะทดสอบให้เปลี่ยนที่ตัวเลขของ 'map1.npy' ได้ตั้งแต่ 1-5
+
+**การทำงาน:**
+
+1. เมื่อโปรแกรมเริ่มต้นขึ้น จะมีการโหลดแผนที่จากไฟล์ map[].npy 
+2. หุ่นยนต์จะใช้ A Algorithm* ในการคำนวณเส้นทางจากตำแหน่งเริ่มต้นไปยังจุดหมายที่กำหนด
+3. ผู้ใช้สามารถกดปุ่มลูกศรซ้าย (←) และลูกศรขวา (→) เพื่อเปลี่ยนสถานะ (state) และดูการเคลื่อนที่ของหุ่นยนต์
+4. โปรแกรมจะมีการแสดงแผนที่และหุ่นยนต์บนหน้าจอ
+
+**คำอธิบายฟังก์ชัน:**
+  - main(): ฟังก์ชันหลักที่เริ่มต้นโปรแกรม, คำนวณเส้นทางและแสดงผลการเคลื่อนที่ของหุ่นยนต์
+  - RobotArm: คลาสที่ใช้ควบคุมหุ่นยนต์อาร์ม, คำนวณการเคลื่อนที่และแสดงภาพ
+  - A_Star: คลาสที่ใช้สำหรับคำนวณเส้นทางจากจุดเริ่มต้นไปยังจุดหมาย
+  - map2img: ฟังก์ชันที่ใช้แสดงแผนที่บนหน้าจอ
 
 ## **ผลการทดลอง**
 **Examples : Map1.npy**
