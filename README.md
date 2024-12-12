@@ -51,7 +51,7 @@
 
 # **System Overview**
 
-[SystemFinal.png](image%20for%20read%20me/SystemFinal.png)
+
 
 
 # **โปรดลง Library พวกนี้ก่อนรัน**
