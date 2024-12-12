@@ -51,10 +51,11 @@
 
 # **System Overview**
 
+![system_map](image%20for%20read%20me/SystemFinal2.png)
 
 
 
-# **โปรดลง Library พวกนี้ก่อนรัน**
+# **โปรดลง Library พวกนี้ก่อน**
   - numpy
   - math
   - roboticstoolbox
@@ -403,10 +404,12 @@ The simulation begins with the robot arm in its home position and a known target
 
 **Examples : Out of Reach**
 
-pic ture 2"D:ปี3\MLwithju\results\2 out of reach.png"
+![Out_of_reach](image%20for%20read%20me/4Out_of_lenght.png)
 
 **Examples : Spawn On Obstacle**
-pic ture 3"D:ปี3\MLwithju\results\3"
+
+
+![All obstacle]()
 
 **การตรวจสอบความถูกต้อง : Map1.npy**
 สำหรับการตรวจสอบความถูกต้อง เราสามารถแสดงผลลัพธ์ได้โดยใช้ทั้ Forward kinematic และ Inverse kinematics ของแขนหุ่นยนต์ เพื่อคำนวณและตรวจสอบตำแหน่งเป้าหมาย
