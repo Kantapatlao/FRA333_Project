@@ -1,5 +1,4 @@
-# **FRA333 Class Project: Pathfinding and Position Trajectory Generation for Collision Avoidance in a 3-DOF Planar Revolute Robot
-**
+# **FRA333 Class Project: Pathfinding and Position Trajectory Generation for Collision Avoidance in a 3-DOF Planar Revolute Robot**
 
 โครงงานนี้ถูกจัดทำขึ้นเพื่อใช้ในการศึกษาและพัฒนาการสร้างวิถีการเคลื่อนที่ (Trajectory Generation) สำหรับหุ่นยนต์ 3 DOF Planar revolute robot ที่สามารถหลบหลีกสิ่งกีดขวางภายในพื้นที่ทำงาน (Task Space) ได้ โดยการจำลองการเคลื่อนที่และลักษณะของหุ่น ผ่านการใช้ Python และอัลกอริทึมที่ใช้ในการค้นหาเส้นทาง (Path finding) ผลลัพท์ที่คาดหวังคือโปรแกรมจำลองแขนกล 3 DOF ที่สามารถเคลื่อนที่ไปยังเป้าหมายได้โดยหลีกเลี่ยงการชนสิ่งกีดขวางตามข้อกำหนดในขั้นตอนการวางแผนวิถี (Trajectory planning)
 การทดสอบจะดำเนินการผ่านการจำลองด้วย Pygame ที่จะแสดงให้เห็นถึงการเคลื่อนที่ในพื่นที่ทำงานที่มีสิ่งกีดขวางหลากหลายรูปแบบ ที่ใช้เป็นเกณฑ์ให้เห็นภาพในการทดสอบ
@@ -52,7 +51,7 @@
 
 # **System Overview**
 
-[alt text](<image for read me/SystemFinal.png>)
+[SystemFinal.png](image%20for%20read%20me/SystemFinal.png)
 
 
 # **โปรดลง Library พวกนี้ก่อนรัน**
