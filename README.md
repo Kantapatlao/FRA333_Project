@@ -14,6 +14,7 @@
 - [การใช้งานโปรแกรม](#การใช้งานโปรแกรม)
 - [ผลการทดลอง](#ผลการทดลอง)
 - [สรุปและวิเคราะห์ผล](#สรุปและวิเคราะห์ผล)
+- [แนวทางการแก้ไขและพัฒนาต่อ](#แนวทางการแก้ไขและพัฒนาต่อ)
 - [เอกสารอ้างอิง](#เอกสารอ้างอิง)
 
 # **จุดประสงค์โครงการ**
@@ -233,7 +234,7 @@ Link_pos = R.forward_kinematic([math.pi/2, -math.pi/2, 0])
 solution = R.sequencial_IK_3(100, 600)
 ```
   - check_wall_collision(self, map_x, map_y, map_size_x, map_size_y): จากขนาดและตำแหน่งของแผนที่ ตรวจสอบว่าค่ามุมข้อต่อในปัจจุบันชนกับขอบของแผนที่หรือไม่
-  - check_object_collision(self, obstacle_list): จากออบเจ็กต์ RobotArm ปัจจุบันตรวจสอบว่าชนกับสิ่งกีดขวางใดหรือไม่
+  - check_object_collision(self, obstacle_list): จากออบเจ็กต์  RobotArm ปัจจุบันตรวจสอบว่าชนกับสิ่งกีดขวางใดหรือไม่
   - draw_robot(self, pygame_screen, base_x=None, base_y=None): วาดหุ่นยนต์ลงในหน้าจอ pygame ตามค่ามุมข้อต่อปัจจุบัน สามารถกำหนดตำแหน่งฐานเพิ่มเติมได้ในฟังก์ชันนี้
 
 ## A_Star.py
@@ -399,8 +400,9 @@ if __name__ == "__main__":
 
 ## **ผลการทดลอง**
 **Examples : Map1.npy**
-[Watch the video](D:\ปี3\MLwithju\ML_project\20241209-0339-49.7498429.mp4)
-The simulation begins with the robot arm in its home position and a known target point. The inverse kinematics approach is used to calculate the joint (q) values required to move the robot arm to the target position.
+[![Watch the video](image%20for%20read%20me/Path%20find1.png)](https://youtu.be/ng2P5IhppaE)
+
+การจำลองเริ่มต้นด้วยแขนหุ่นยนต์อยู่ในตำแหน่งเริ่มต้น (Home Position) และมีจุดเป้าหมายที่กำหนดไว้ล่วงหน้า ใช้แนวทางคำนวณ Inverse Kinematics เพื่อหาค่ามุมข้อต่อ (q) ที่จำเป็นสำหรับการเคลื่อนย้ายแขนหุ่นยนต์ไปยังตำแหน่งเป้าหมาย
 
 **Examples : Out of Reach**
 
@@ -408,8 +410,7 @@ The simulation begins with the robot arm in its home position and a known target
 
 **Examples : Spawn On Obstacle**
 
-
-![All obstacle]()
+![cant_go](image%20for%20read%20me/3%20spawn%20on%20wall.png)
 
 **การตรวจสอบความถูกต้อง : Map1.npy**
 สำหรับการตรวจสอบความถูกต้อง เราสามารถแสดงผลลัพธ์ได้โดยใช้ทั้ Forward kinematic และ Inverse kinematics ของแขนหุ่นยนต์ เพื่อคำนวณและตรวจสอบตำแหน่งเป้าหมาย
@@ -418,7 +419,16 @@ The simulation begins with the robot arm in its home position and a known target
 สำหรับการตรวจสอบความถูกต้อง เราสามารถแสดงผลลัพธ์โดยใช้ทั้งการคำนวณ Forward kinematic และ Inverse kinematics ของแขนหุ่นยนต์เพื่อคำนวณและยืนยันตำแหน่งเป้าหมาย
 
 ## **สรุปและวิเคราะห์ผล**
-จากการศึกษาและลองทำแบบจำลองการเคลื่อนที่ของแขนกลแบบ 3 DOF Relolue ในสองมิติและประยุกต์ใช้ร่วมกับการทำ Path finding และ Trajectory planning โดยใช้ A* Search algorithm พบว่าจากผลลัพธ์ที่ได้แขนของหุ่นยนต์สามารถเคลื่อนที่ไปยังเป้าหมายโดยไม่โดนสิ่งกีดขวางและเมื่อตำแหน่งเป้าหมายอยู่เกินระยะแแขนหรือไม่มีเส้นทางที่ไปได้โดยไม่ชนก็สามารถส่ง Feedback กลับมาได้  แต่ในบางแผนที่และบางตำแหน่งจะยังไม่สามารถเคลื่อนที่ไปได้ เนื่องจากสมการ Inverse kinematic ที่ใช้ในการคิดกลับมาหาตำแหน่ง joint จึงทำให้ Logic ที่เช็คระยะมีปัญหาไปด้วย ในส่วนของ A* Search algorithm ยังพิสูจน์ไม่ได้ว่า Path ที่สร้างข้นมานั้น Optimal
+  จากการศึกษาและทดลองสร้างแบบจำลองการเคลื่อนที่ของแขนกลแบบ 3 DOF (Revolute) ในสองมิติ พร้อมทั้งประยุกต์ใช้ร่วมกับกระบวนการหาเส้นทาง (Path Finding) และการวางแผนการเคลื่อนที่ (Trajectory Planning) โดยใช้อัลกอริทึม A* Search ผลการทดลองแสดงให้เห็นว่า แขนกลสามารถเคลื่อนที่ไปยังตำแหน่งเป้าหมายได้โดยไม่ชนกับสิ่งกีดขวาง และในกรณีที่ตำแหน่งเป้าหมายอยู่นอกระยะของแขนกล หรือไม่มีเส้นทางที่ปลอดภัยไปถึงได้ ระบบสามารถส่ง Feedback กลับมาแจ้งสถานการณ์ดังกล่าวได้อย่างมีประสิทธิภาพ อย่างไรก็ตาม ในบางรูปแบบแผนที่และบางตำแหน่งของเป้าหมาย ระบบยังไม่สามารถนำแขนกลเคลื่อนที่ไปยังเป้าหมายได้ เนื่องจากข้อจำกัดของสมการ Inverse Kinematics ที่ใช้ในการคำนวณหาตำแหน่งข้อต่อ (Joint Position) ซึ่งส่งผลกระทบต่อกระบวนการตรวจสอบระยะทาง (Logic for Distance Checking) ให้เกิดความคลาดเคลื่อนได้ นอกจากนี้ยังไม่สามารถพิสูจน์ได้ว่าเส้นทางที่สร้างขึ้นโดย A* Search Algorithm นั้นเป็นเส้นทางที่มีความเหมาะสมที่สุด (Optimal Path)
+
+## **แนวทางการแก้ไขและพัฒนาต่อ**
+- ปรับปรุงสมการ Inverse Kinematics
+  - ศึกษาและปรับปรุงสมการ Inverse Kinematics ให้มีความถูกต้องและครอบคลุมกรณีต่าง ๆ ได้มากขึ้น
+- ปรับปรุง A* Search Algorithm
+  - ประยุกต์ใช้ Heuristic Function ที่เหมาะสมมากขึ้น เพื่อให้การหาเส้นทางมีประสิทธิภาพ และลดโอกาสเกิดเส้นทางที่ไม่ Optimal
+  - ทดลองเปรียบเทียบกับอัลกอริทึมอื่น เช่น Dijkstra หรือ RRT (Rapidly-exploring Random Tree) เพื่อวิเคราะห์ข้อดีและข้อเสีย
+- เพิ่มการตรวจสอบประสิทธิภาพ
+  - พัฒนาโมดูลสำหรับประเมินความถูกต้องของเส้นทาง (Path Accuracy) และเปรียบเทียบเส้นทางที่สร้างขึ้นกับเส้นทางที่ Optimal
 
 ## **เอกสารอ้างอิง**
 Recent advance in Rapidly – Exploring random tree: A review
